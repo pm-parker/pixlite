@@ -1,0 +1,7411 @@
+{
+ "MU00000001": [
+  {
+   "part": "Blusher",
+   "engine": "BlusherImageMakeup",
+   "degree": 70,
+   "tex": [
+    "sh.png"
+   ],
+   "opacity": 20,
+   "roi": [
+    95,
+    40,
+    901,
+    1081
+   ],
+   "mix": [
+    0,
+    0,
+    0,
+    255
+   ]
+  },
+  {
+   "part": "Bronzer",
+   "engine": "BlusherImageMakeup",
+   "degree": 70,
+   "tex": [
+    "xr.png"
+   ],
+   "opacity": 49,
+   "roi": [
+    95,
+    40,
+    901,
+    1081
+   ],
+   "mix": [
+    0,
+    0,
+    0,
+    255
+   ]
+  },
+  {
+   "part": "Bronzer",
+   "engine": "BlusherImageMakeup",
+   "degree": 70,
+   "tex": [
+    "xr_SideFace.png"
+   ],
+   "opacity": 49,
+   "roi": [
+    95,
+    40,
+    901,
+    1081
+   ],
+   "mix": [
+    0,
+    0,
+    0,
+    255
+   ]
+  },
+  {
+   "part": "Eyebrow",
+   "engine": "NormalEyeBrowImageMakeup",
+   "degree": 70,
+   "tex": [
+    "mmz.png"
+   ],
+   "opacity": 60,
+   "roi": [
+    210,
+    410,
+    260,
+    110
+   ],
+   "mix": [
+    0,
+    0,
+    0,
+    255
+   ]
+  },
+  {
+   "part": "Eyebrow",
+   "engine": "NormalEyeBrowImageMakeup",
+   "degree": 70,
+   "tex": [
+    "mmy.png"
+   ],
+   "opacity": 60,
+   "roi": [
+    540,
+    410,
+    260,
+    110
+   ],
+   "mix": [
+    0,
+    0,
+    0,
+    255
+   ]
+  },
+  {
+   "part": "Eyelash",
+   "engine": "SymEyeLashImageMakeup",
+   "degree": 70,
+   "tex": [
+    "jmz.png"
+   ],
+   "opacity": 100,
+   "roi": [
+    200,
+    400,
+    300,
+    300
+   ],
+   "mix": [
+    78,
+    30,
+    28,
+    255
+   ]
+  },
+  {
+   "part": "Eyelash",
+   "engine": "SymEyeLashImageMakeup",
+   "degree": 70,
+   "tex": [
+    "jmy.png"
+   ],
+   "opacity": 100,
+   "roi": [
+    500,
+    400,
+    300,
+    300
+   ],
+   "mix": [
+    78,
+    30,
+    28,
+    255
+   ]
+  },
+  {
+   "part": "Eyeliner",
+   "engine": "SymEyeImageMakeup",
+   "degree": 70,
+   "tex": [
+    "yxy.png"
+   ],
+   "opacity": 56,
+   "roi": [
+    500,
+    400,
+    300,
+    300
+   ],
+   "mix": [
+    0,
+    0,
+    0,
+    255
+   ]
+  },
+  {
+   "part": "Eyeliner",
+   "engine": "SymEyeImageMakeup",
+   "degree": 70,
+   "tex": [
+    "yxz.png"
+   ],
+   "opacity": 56,
+   "roi": [
+    200,
+    400,
+    300,
+    300
+   ],
+   "mix": [
+    0,
+    0,
+    0,
+    255
+   ]
+  },
+  {
+   "part": "Eyemakeup",
+   "engine": "SymEyeImageMakeup",
+   "degree": 70,
+   "tex": [
+    "yyz.png"
+   ],
+   "opacity": 60,
+   "roi": [
+    200,
+    400,
+    300,
+    300
+   ],
+   "mix": [
+    0,
+    0,
+    0,
+    255
+   ]
+  },
+  {
+   "part": "Eyemakeup",
+   "engine": "SymEyeImageMakeup",
+   "degree": 70,
+   "tex": [
+    "yyy.png"
+   ],
+   "opacity": 60,
+   "roi": [
+    500,
+    400,
+    300,
+    300
+   ],
+   "mix": [
+    0,
+    0,
+    0,
+    255
+   ]
+  },
+  {
+   "part": "Lipstick",
+   "engine": "LipStickImageMakeup",
+   "degree": 70,
+   "tex": [
+    "zc.png"
+   ],
+   "opacity": 69,
+   "roi": [
+    350,
+    800,
+    300,
+    120
+   ],
+   "mix": [
+    0,
+    0,
+    0,
+    255
+   ]
+  }
+ ],
+ "MU00000002": [
+  {
+   "part": "Blusher",
+   "engine": "BlusherImageMakeup",
+   "degree": 70,
+   "tex": [
+    "sh.png"
+   ],
+   "opacity": 45,
+   "roi": [
+    95,
+    40,
+    901,
+    1081
+   ],
+   "mix": [
+    0,
+    0,
+    0,
+    255
+   ]
+  },
+  {
+   "part": "Bronzer",
+   "engine": "BlusherImageMakeup",
+   "degree": 70,
+   "tex": [
+    "xr.png"
+   ],
+   "opacity": 75,
+   "roi": [
+    95,
+    40,
+    901,
+    1081
+   ],
+   "mix": [
+    0,
+    0,
+    0,
+    255
+   ]
+  },
+  {
+   "part": "Bronzer",
+   "engine": "BlusherImageMakeup",
+   "degree": 70,
+   "tex": [
+    "xr_SideFace.png"
+   ],
+   "opacity": 75,
+   "roi": [
+    95,
+    40,
+    901,
+    1081
+   ],
+   "mix": [
+    0,
+    0,
+    0,
+    255
+   ]
+  },
+  {
+   "part": "Eyebrow",
+   "engine": "SymEyeBrowImageMakeup",
+   "degree": 70,
+   "tex": [
+    "mmz.png"
+   ],
+   "opacity": 65,
+   "roi": [
+    210,
+    410,
+    290,
+    110
+   ],
+   "mix": [
+    33,
+    17,
+    14,
+    255
+   ]
+  },
+  {
+   "part": "Eyelash",
+   "engine": "SymEyeLashImageMakeup",
+   "degree": 70,
+   "tex": [
+    "yzz_3d.png"
+   ],
+   "opacity": 100,
+   "roi": [
+    200,
+    400,
+    300,
+    300
+   ],
+   "mix": [
+    78,
+    30,
+    28,
+    255
+   ]
+  },
+  {
+   "part": "Eyelash",
+   "engine": "SymEyeLashImageMakeup",
+   "degree": 70,
+   "tex": [
+    "yzy_3d.png"
+   ],
+   "opacity": 100,
+   "roi": [
+    500,
+    400,
+    300,
+    300
+   ],
+   "mix": [
+    78,
+    30,
+    28,
+    255
+   ]
+  },
+  {
+   "part": "Eyeliner",
+   "engine": "SymEyeImageMakeup",
+   "degree": 70,
+   "tex": [
+    "yxy.png"
+   ],
+   "opacity": 85,
+   "roi": [
+    500,
+    400,
+    300,
+    300
+   ],
+   "mix": [
+    0,
+    0,
+    0,
+    255
+   ]
+  },
+  {
+   "part": "Eyeliner",
+   "engine": "SymEyeImageMakeup",
+   "degree": 70,
+   "tex": [
+    "yxz.png"
+   ],
+   "opacity": 85,
+   "roi": [
+    200,
+    400,
+    300,
+    300
+   ],
+   "mix": [
+    0,
+    0,
+    0,
+    255
+   ]
+  },
+  {
+   "part": "Eyemakeup",
+   "engine": "SymEyeImageMakeup",
+   "degree": 70,
+   "tex": [
+    "yyz.png"
+   ],
+   "opacity": 75,
+   "roi": [
+    200,
+    400,
+    300,
+    300
+   ],
+   "mix": [
+    0,
+    0,
+    0,
+    255
+   ]
+  },
+  {
+   "part": "Eyemakeup",
+   "engine": "SymEyeImageMakeup",
+   "degree": 70,
+   "tex": [
+    "yyy.png"
+   ],
+   "opacity": 75,
+   "roi": [
+    500,
+    400,
+    300,
+    300
+   ],
+   "mix": [
+    0,
+    0,
+    0,
+    255
+   ]
+  },
+  {
+   "part": "Eyemakeup",
+   "engine": "SilkWorm",
+   "degree": 70,
+   "tex": null,
+   "opacity": 75,
+   "roi": null,
+   "mix": null
+  },
+  {
+   "part": "Lipstick",
+   "engine": "LipStickImageMakeup",
+   "degree": 70,
+   "tex": [
+    "zc.png"
+   ],
+   "opacity": 58,
+   "roi": [
+    350,
+    800,
+    300,
+    120
+   ],
+   "mix": [
+    0,
+    0,
+    0,
+    255
+   ]
+  }
+ ],
+ "MU00000003": [
+  {
+   "part": "Blusher",
+   "engine": "BlusherImageMakeup",
+   "degree": 70,
+   "tex": [
+    "sh.png"
+   ],
+   "opacity": 30,
+   "roi": [
+    95,
+    40,
+    901,
+    1081
+   ],
+   "mix": [
+    0,
+    0,
+    0,
+    255
+   ]
+  },
+  {
+   "part": "Bronzer",
+   "engine": "BlusherImageMakeup",
+   "degree": 70,
+   "tex": [
+    "xr.png"
+   ],
+   "opacity": 70,
+   "roi": [
+    95,
+    40,
+    901,
+    1081
+   ],
+   "mix": [
+    0,
+    0,
+    0,
+    255
+   ]
+  },
+  {
+   "part": "Bronzer",
+   "engine": "BlusherImageMakeup",
+   "degree": 70,
+   "tex": [
+    "xr_SideFace.png"
+   ],
+   "opacity": 70,
+   "roi": [
+    95,
+    40,
+    901,
+    1081
+   ],
+   "mix": [
+    0,
+    0,
+    0,
+    255
+   ]
+  },
+  {
+   "part": "Eyebrow",
+   "engine": "SymEyeBrowImageMakeup",
+   "degree": 70,
+   "tex": [
+    "mmz.png"
+   ],
+   "opacity": 72,
+   "roi": [
+    210,
+    410,
+    290,
+    110
+   ],
+   "mix": [
+    33,
+    17,
+    14,
+    255
+   ]
+  },
+  {
+   "part": "Eyelash",
+   "engine": "SymEyeLashImageMakeup",
+   "degree": 70,
+   "tex": [
+    "yzz_3d.png"
+   ],
+   "opacity": 90,
+   "roi": [
+    200,
+    400,
+    300,
+    300
+   ],
+   "mix": [
+    78,
+    30,
+    28,
+    255
+   ]
+  },
+  {
+   "part": "Eyelash",
+   "engine": "SymEyeLashImageMakeup",
+   "degree": 70,
+   "tex": [
+    "yzy_3d.png"
+   ],
+   "opacity": 90,
+   "roi": [
+    500,
+    400,
+    300,
+    300
+   ],
+   "mix": [
+    78,
+    30,
+    28,
+    255
+   ]
+  },
+  {
+   "part": "Eyemakeup",
+   "engine": "SymEyeImageMakeup",
+   "degree": 70,
+   "tex": [
+    "yyz.png"
+   ],
+   "opacity": 70,
+   "roi": [
+    200,
+    400,
+    300,
+    300
+   ],
+   "mix": [
+    0,
+    0,
+    0,
+    255
+   ]
+  },
+  {
+   "part": "Eyemakeup",
+   "engine": "SymEyeImageMakeup",
+   "degree": 70,
+   "tex": [
+    "yyy.png"
+   ],
+   "opacity": 70,
+   "roi": [
+    500,
+    400,
+    300,
+    300
+   ],
+   "mix": [
+    0,
+    0,
+    0,
+    255
+   ]
+  },
+  {
+   "part": "Lipstick",
+   "engine": "LipStickImageMakeup",
+   "degree": 70,
+   "tex": [
+    "zc.png"
+   ],
+   "opacity": 50,
+   "roi": [
+    350,
+    800,
+    300,
+    120
+   ],
+   "mix": [
+    0,
+    0,
+    0,
+    255
+   ]
+  },
+  {
+   "part": "Lipstick",
+   "engine": "LipColor",
+   "degree": 70,
+   "tex": null,
+   "opacity": null,
+   "roi": null,
+   "mix": null
+  }
+ ],
+ "MU00000004": [
+  {
+   "part": "Blusher",
+   "engine": "BlusherImageMakeup",
+   "degree": 70,
+   "tex": [
+    "sh.png"
+   ],
+   "opacity": 35,
+   "roi": [
+    95,
+    40,
+    901,
+    1081
+   ],
+   "mix": [
+    0,
+    0,
+    0,
+    255
+   ]
+  },
+  {
+   "part": "Bronzer",
+   "engine": "BlusherImageMakeup",
+   "degree": 70,
+   "tex": [
+    "xr.png"
+   ],
+   "opacity": 70,
+   "roi": [
+    95,
+    40,
+    901,
+    1081
+   ],
+   "mix": [
+    0,
+    0,
+    0,
+    255
+   ]
+  },
+  {
+   "part": "Bronzer",
+   "engine": "BlusherImageMakeup",
+   "degree": 70,
+   "tex": [
+    "xr_SideFace.png"
+   ],
+   "opacity": 70,
+   "roi": [
+    95,
+    40,
+    901,
+    1081
+   ],
+   "mix": [
+    0,
+    0,
+    0,
+    255
+   ]
+  },
+  {
+   "part": "Eyebrow",
+   "engine": "NormalEyeBrowImageMakeup",
+   "degree": 70,
+   "tex": [
+    "mmz.png"
+   ],
+   "opacity": 65,
+   "roi": [
+    210,
+    410,
+    260,
+    110
+   ],
+   "mix": [
+    0,
+    0,
+    0,
+    255
+   ]
+  },
+  {
+   "part": "Eyebrow",
+   "engine": "NormalEyeBrowImageMakeup",
+   "degree": 70,
+   "tex": [
+    "mmy.png"
+   ],
+   "opacity": 65,
+   "roi": [
+    540,
+    410,
+    260,
+    110
+   ],
+   "mix": [
+    0,
+    0,
+    0,
+    255
+   ]
+  },
+  {
+   "part": "Eyelash",
+   "engine": "SymEyeLashImageMakeup",
+   "degree": 70,
+   "tex": [
+    "jmz.png"
+   ],
+   "opacity": 65,
+   "roi": [
+    200,
+    400,
+    300,
+    300
+   ],
+   "mix": [
+    78,
+    30,
+    28,
+    255
+   ]
+  },
+  {
+   "part": "Eyelash",
+   "engine": "SymEyeLashImageMakeup",
+   "degree": 70,
+   "tex": [
+    "jmy.png"
+   ],
+   "opacity": 65,
+   "roi": [
+    500,
+    400,
+    300,
+    300
+   ],
+   "mix": [
+    78,
+    30,
+    28,
+    255
+   ]
+  },
+  {
+   "part": "Eyeliner",
+   "engine": "SymEyeImageMakeup",
+   "degree": 70,
+   "tex": [
+    "yxy.png"
+   ],
+   "opacity": 60,
+   "roi": [
+    500,
+    400,
+    300,
+    300
+   ],
+   "mix": [
+    0,
+    0,
+    0,
+    255
+   ]
+  },
+  {
+   "part": "Eyeliner",
+   "engine": "SymEyeImageMakeup",
+   "degree": 70,
+   "tex": [
+    "yxz.png"
+   ],
+   "opacity": 60,
+   "roi": [
+    200,
+    400,
+    300,
+    300
+   ],
+   "mix": [
+    0,
+    0,
+    0,
+    255
+   ]
+  },
+  {
+   "part": "Eyemakeup",
+   "engine": "SymEyeImageMakeup",
+   "degree": 70,
+   "tex": [
+    "yyz.png"
+   ],
+   "opacity": 80,
+   "roi": [
+    200,
+    400,
+    300,
+    300
+   ],
+   "mix": [
+    0,
+    0,
+    0,
+    255
+   ]
+  },
+  {
+   "part": "Eyemakeup",
+   "engine": "SymEyeImageMakeup",
+   "degree": 70,
+   "tex": [
+    "yyy.png"
+   ],
+   "opacity": 80,
+   "roi": [
+    500,
+    400,
+    300,
+    300
+   ],
+   "mix": [
+    0,
+    0,
+    0,
+    255
+   ]
+  },
+  {
+   "part": "Eyemakeup",
+   "engine": "SymEyeImageMakeup",
+   "degree": 70,
+   "tex": [
+    "yyggz.png"
+   ],
+   "opacity": 70,
+   "roi": [
+    200,
+    400,
+    300,
+    300
+   ],
+   "mix": [
+    0,
+    0,
+    0,
+    255
+   ]
+  },
+  {
+   "part": "Eyemakeup",
+   "engine": "SymEyeImageMakeup",
+   "degree": 70,
+   "tex": [
+    "yyggy.png"
+   ],
+   "opacity": 70,
+   "roi": [
+    500,
+    400,
+    300,
+    300
+   ],
+   "mix": [
+    0,
+    0,
+    0,
+    255
+   ]
+  },
+  {
+   "part": "Lipstick",
+   "engine": "LipStickImageMakeup",
+   "degree": 70,
+   "tex": [
+    "zc.png"
+   ],
+   "opacity": 70,
+   "roi": [
+    350,
+    800,
+    300,
+    120
+   ],
+   "mix": [
+    0,
+    0,
+    0,
+    255
+   ]
+  },
+  {
+   "part": "Lipstick",
+   "engine": "LipStickImageMakeup",
+   "degree": 70,
+   "tex": [
+    "zcgg.png"
+   ],
+   "opacity": 33,
+   "roi": [
+    350,
+    800,
+    300,
+    120
+   ],
+   "mix": [
+    0,
+    0,
+    0,
+    255
+   ]
+  }
+ ],
+ "MU00000005": [
+  {
+   "part": "Blusher",
+   "engine": "BlusherImageMakeup",
+   "degree": 70,
+   "tex": [
+    "sh.png"
+   ],
+   "opacity": 35,
+   "roi": [
+    95,
+    40,
+    901,
+    1081
+   ],
+   "mix": [
+    0,
+    0,
+    0,
+    255
+   ]
+  },
+  {
+   "part": "Bronzer",
+   "engine": "BlusherImageMakeup",
+   "degree": 70,
+   "tex": [
+    "xr.png"
+   ],
+   "opacity": 70,
+   "roi": [
+    95,
+    40,
+    901,
+    1081
+   ],
+   "mix": [
+    0,
+    0,
+    0,
+    255
+   ]
+  },
+  {
+   "part": "Bronzer",
+   "engine": "BlusherImageMakeup",
+   "degree": 70,
+   "tex": [
+    "xr_SideFace.png"
+   ],
+   "opacity": 70,
+   "roi": [
+    95,
+    40,
+    901,
+    1081
+   ],
+   "mix": [
+    0,
+    0,
+    0,
+    255
+   ]
+  },
+  {
+   "part": "Bronzer",
+   "engine": "BlusherImageMakeup",
+   "degree": 70,
+   "tex": [
+    "gg.png"
+   ],
+   "opacity": 100,
+   "roi": [
+    95,
+    40,
+    901,
+    1081
+   ],
+   "mix": [
+    0,
+    0,
+    0,
+    255
+   ]
+  },
+  {
+   "part": "Eyebrow",
+   "engine": "SymEyeBrowImageMakeup",
+   "degree": 70,
+   "tex": [
+    "mmz.png"
+   ],
+   "opacity": 72,
+   "roi": [
+    210,
+    410,
+    290,
+    110
+   ],
+   "mix": [
+    33,
+    17,
+    14,
+    255
+   ]
+  },
+  {
+   "part": "Eyelash",
+   "engine": "SymEyeLashImageMakeup",
+   "degree": 70,
+   "tex": [
+    "jmz.png"
+   ],
+   "opacity": 70,
+   "roi": [
+    200,
+    400,
+    300,
+    300
+   ],
+   "mix": [
+    78,
+    30,
+    28,
+    255
+   ]
+  },
+  {
+   "part": "Eyelash",
+   "engine": "SymEyeLashImageMakeup",
+   "degree": 70,
+   "tex": [
+    "jmy.png"
+   ],
+   "opacity": 70,
+   "roi": [
+    500,
+    400,
+    300,
+    300
+   ],
+   "mix": [
+    78,
+    30,
+    28,
+    255
+   ]
+  },
+  {
+   "part": "Eyeliner",
+   "engine": "SymEyeImageMakeup",
+   "degree": 70,
+   "tex": [
+    "yxy.png"
+   ],
+   "opacity": 70,
+   "roi": [
+    500,
+    400,
+    300,
+    300
+   ],
+   "mix": [
+    0,
+    0,
+    0,
+    255
+   ]
+  },
+  {
+   "part": "Eyeliner",
+   "engine": "SymEyeImageMakeup",
+   "degree": 70,
+   "tex": [
+    "yxz.png"
+   ],
+   "opacity": 70,
+   "roi": [
+    200,
+    400,
+    300,
+    300
+   ],
+   "mix": [
+    0,
+    0,
+    0,
+    255
+   ]
+  },
+  {
+   "part": "Eyemakeup",
+   "engine": "SymEyeImageMakeup",
+   "degree": 70,
+   "tex": [
+    "yyz.png"
+   ],
+   "opacity": 70,
+   "roi": [
+    200,
+    400,
+    300,
+    300
+   ],
+   "mix": [
+    0,
+    0,
+    0,
+    255
+   ]
+  },
+  {
+   "part": "Eyemakeup",
+   "engine": "SymEyeImageMakeup",
+   "degree": 70,
+   "tex": [
+    "yyy.png"
+   ],
+   "opacity": 70,
+   "roi": [
+    500,
+    400,
+    300,
+    300
+   ],
+   "mix": [
+    0,
+    0,
+    0,
+    255
+   ]
+  },
+  {
+   "part": "Lipstick",
+   "engine": "LipStickImageMakeup",
+   "degree": 70,
+   "tex": [
+    "zc.png"
+   ],
+   "opacity": 55,
+   "roi": [
+    350,
+    800,
+    300,
+    120
+   ],
+   "mix": [
+    0,
+    0,
+    0,
+    255
+   ]
+  },
+  {
+   "part": "Lipstick",
+   "engine": "LipStickImageMakeup",
+   "degree": 70,
+   "tex": [
+    "zcgg.png"
+   ],
+   "opacity": 33,
+   "roi": [
+    350,
+    800,
+    300,
+    120
+   ],
+   "mix": [
+    0,
+    0,
+    0,
+    255
+   ]
+  }
+ ],
+ "MU00000006": [
+  {
+   "part": "Blusher",
+   "engine": "BlusherImageMakeup",
+   "degree": 70,
+   "tex": [
+    "sh.png"
+   ],
+   "opacity": 35,
+   "roi": [
+    95,
+    40,
+    901,
+    1081
+   ],
+   "mix": [
+    0,
+    0,
+    0,
+    255
+   ]
+  },
+  {
+   "part": "Bronzer",
+   "engine": "BlusherImageMakeup",
+   "degree": 70,
+   "tex": [
+    "xr.png"
+   ],
+   "opacity": 70,
+   "roi": [
+    95,
+    40,
+    901,
+    1081
+   ],
+   "mix": [
+    0,
+    0,
+    0,
+    255
+   ]
+  },
+  {
+   "part": "Bronzer",
+   "engine": "BlusherImageMakeup",
+   "degree": 70,
+   "tex": [
+    "xr_SideFace.png"
+   ],
+   "opacity": 70,
+   "roi": [
+    95,
+    40,
+    901,
+    1081
+   ],
+   "mix": [
+    0,
+    0,
+    0,
+    255
+   ]
+  },
+  {
+   "part": "Eyebrow",
+   "engine": "SymEyeBrowImageMakeup",
+   "degree": 70,
+   "tex": [
+    "mmz.png"
+   ],
+   "opacity": 72,
+   "roi": [
+    210,
+    410,
+    290,
+    110
+   ],
+   "mix": [
+    33,
+    17,
+    14,
+    255
+   ]
+  },
+  {
+   "part": "Eyelash",
+   "engine": "SymEyeLashImageMakeup",
+   "degree": 70,
+   "tex": [
+    "jmz.png"
+   ],
+   "opacity": 65,
+   "roi": [
+    200,
+    400,
+    300,
+    300
+   ],
+   "mix": [
+    78,
+    30,
+    28,
+    255
+   ]
+  },
+  {
+   "part": "Eyelash",
+   "engine": "SymEyeLashImageMakeup",
+   "degree": 70,
+   "tex": [
+    "jmy.png"
+   ],
+   "opacity": 65,
+   "roi": [
+    500,
+    400,
+    300,
+    300
+   ],
+   "mix": [
+    78,
+    30,
+    28,
+    255
+   ]
+  },
+  {
+   "part": "Eyeliner",
+   "engine": "SymEyeImageMakeup",
+   "degree": 70,
+   "tex": [
+    "yxy.png"
+   ],
+   "opacity": 55,
+   "roi": [
+    500,
+    400,
+    300,
+    300
+   ],
+   "mix": [
+    0,
+    0,
+    0,
+    255
+   ]
+  },
+  {
+   "part": "Eyeliner",
+   "engine": "SymEyeImageMakeup",
+   "degree": 70,
+   "tex": [
+    "yxz.png"
+   ],
+   "opacity": 55,
+   "roi": [
+    200,
+    400,
+    300,
+    300
+   ],
+   "mix": [
+    0,
+    0,
+    0,
+    255
+   ]
+  },
+  {
+   "part": "Eyemakeup",
+   "engine": "SymEyeImageMakeup",
+   "degree": 70,
+   "tex": [
+    "yyz.png"
+   ],
+   "opacity": 75,
+   "roi": [
+    200,
+    400,
+    300,
+    300
+   ],
+   "mix": [
+    0,
+    0,
+    0,
+    255
+   ]
+  },
+  {
+   "part": "Eyemakeup",
+   "engine": "SymEyeImageMakeup",
+   "degree": 70,
+   "tex": [
+    "yyy.png"
+   ],
+   "opacity": 75,
+   "roi": [
+    500,
+    400,
+    300,
+    300
+   ],
+   "mix": [
+    0,
+    0,
+    0,
+    255
+   ]
+  },
+  {
+   "part": "Lipstick",
+   "engine": "LipStickImageMakeup",
+   "degree": 70,
+   "tex": [
+    "zc.png"
+   ],
+   "opacity": 55,
+   "roi": [
+    350,
+    800,
+    300,
+    120
+   ],
+   "mix": [
+    0,
+    0,
+    0,
+    255
+   ]
+  }
+ ],
+ "MU00000007": [
+  {
+   "part": "Blusher",
+   "engine": "BlusherImageMakeup",
+   "degree": 70,
+   "tex": [
+    "sh.png"
+   ],
+   "opacity": 51,
+   "roi": [
+    95,
+    40,
+    901,
+    1081
+   ],
+   "mix": [
+    0,
+    0,
+    0,
+    255
+   ]
+  },
+  {
+   "part": "Bronzer",
+   "engine": "BlusherImageMakeup",
+   "degree": 70,
+   "tex": [
+    "xr.png"
+   ],
+   "opacity": 58,
+   "roi": [
+    95,
+    40,
+    901,
+    1081
+   ],
+   "mix": [
+    0,
+    0,
+    0,
+    255
+   ]
+  },
+  {
+   "part": "Bronzer",
+   "engine": "BlusherImageMakeup",
+   "degree": 70,
+   "tex": [
+    "xr_SideFace.png"
+   ],
+   "opacity": 58,
+   "roi": [
+    95,
+    40,
+    901,
+    1081
+   ],
+   "mix": [
+    0,
+    0,
+    0,
+    255
+   ]
+  },
+  {
+   "part": "Bronzer",
+   "engine": "BlusherImageMakeup",
+   "degree": 70,
+   "tex": [
+    "gg.png"
+   ],
+   "opacity": 50,
+   "roi": [
+    95,
+    40,
+    901,
+    1081
+   ],
+   "mix": [
+    0,
+    0,
+    0,
+    255
+   ]
+  },
+  {
+   "part": "Eyebrow",
+   "engine": "NormalEyeBrowImageMakeup",
+   "degree": 70,
+   "tex": [
+    "mmz.png"
+   ],
+   "opacity": 57,
+   "roi": [
+    210,
+    410,
+    260,
+    110
+   ],
+   "mix": [
+    0,
+    0,
+    0,
+    255
+   ]
+  },
+  {
+   "part": "Eyebrow",
+   "engine": "NormalEyeBrowImageMakeup",
+   "degree": 70,
+   "tex": [
+    "mmy.png"
+   ],
+   "opacity": 57,
+   "roi": [
+    540,
+    410,
+    260,
+    110
+   ],
+   "mix": [
+    0,
+    0,
+    0,
+    255
+   ]
+  },
+  {
+   "part": "Eyelash",
+   "engine": "NormalEyeLashImageMakeup",
+   "degree": 70,
+   "tex": [
+    "jmz.png"
+   ],
+   "opacity": 90,
+   "roi": [
+    200,
+    400,
+    300,
+    300
+   ],
+   "mix": [
+    78,
+    30,
+    28,
+    255
+   ]
+  },
+  {
+   "part": "Eyelash",
+   "engine": "NormalEyeLashImageMakeup",
+   "degree": 70,
+   "tex": [
+    "jmy.png"
+   ],
+   "opacity": 90,
+   "roi": [
+    500,
+    400,
+    300,
+    300
+   ],
+   "mix": [
+    78,
+    30,
+    28,
+    255
+   ]
+  },
+  {
+   "part": "Eyeliner",
+   "engine": "SymEyeImageMakeup",
+   "degree": 70,
+   "tex": [
+    "yxy.png"
+   ],
+   "opacity": 100,
+   "roi": [
+    500,
+    400,
+    300,
+    300
+   ],
+   "mix": [
+    0,
+    0,
+    0,
+    255
+   ]
+  },
+  {
+   "part": "Eyeliner",
+   "engine": "SymEyeImageMakeup",
+   "degree": 70,
+   "tex": [
+    "yxz.png"
+   ],
+   "opacity": 100,
+   "roi": [
+    200,
+    400,
+    300,
+    300
+   ],
+   "mix": [
+    0,
+    0,
+    0,
+    255
+   ]
+  },
+  {
+   "part": "Eyemakeup",
+   "engine": "SymEyeImageMakeup",
+   "degree": 70,
+   "tex": [
+    "yyz.png"
+   ],
+   "opacity": 55,
+   "roi": [
+    200,
+    400,
+    300,
+    300
+   ],
+   "mix": [
+    0,
+    0,
+    0,
+    255
+   ]
+  },
+  {
+   "part": "Eyemakeup",
+   "engine": "SymEyeImageMakeup",
+   "degree": 70,
+   "tex": [
+    "yyy.png"
+   ],
+   "opacity": 55,
+   "roi": [
+    500,
+    400,
+    300,
+    300
+   ],
+   "mix": [
+    0,
+    0,
+    0,
+    255
+   ]
+  },
+  {
+   "part": "Eyemakeup",
+   "engine": "SymEyeImageMakeup",
+   "degree": 70,
+   "tex": [
+    "lpz.png"
+   ],
+   "opacity": 70,
+   "roi": [
+    200,
+    400,
+    300,
+    300
+   ],
+   "mix": [
+    0,
+    0,
+    0,
+    255
+   ]
+  },
+  {
+   "part": "Eyemakeup",
+   "engine": "SymEyeImageMakeup",
+   "degree": 70,
+   "tex": [
+    "lpy.png"
+   ],
+   "opacity": 70,
+   "roi": [
+    500,
+    400,
+    300,
+    300
+   ],
+   "mix": [
+    0,
+    0,
+    0,
+    255
+   ]
+  },
+  {
+   "part": "Lipstick",
+   "engine": "LipStickImageMakeup",
+   "degree": 70,
+   "tex": [
+    "zc.png"
+   ],
+   "opacity": 62,
+   "roi": [
+    350,
+    800,
+    300,
+    120
+   ],
+   "mix": [
+    0,
+    0,
+    0,
+    255
+   ]
+  },
+  {
+   "part": "Lipstick",
+   "engine": "LipColor",
+   "degree": 70,
+   "tex": null,
+   "opacity": null,
+   "roi": null,
+   "mix": null
+  }
+ ],
+ "MU00000008": [
+  {
+   "part": "Blusher",
+   "engine": "BlusherImageMakeup",
+   "degree": 70,
+   "tex": [
+    "sh.png"
+   ],
+   "opacity": 70,
+   "roi": [
+    95,
+    40,
+    901,
+    1081
+   ],
+   "mix": [
+    0,
+    0,
+    0,
+    255
+   ]
+  },
+  {
+   "part": "Bronzer",
+   "engine": "BlusherImageMakeup",
+   "degree": 70,
+   "tex": [
+    "xr.png"
+   ],
+   "opacity": 70,
+   "roi": [
+    95,
+    40,
+    901,
+    1081
+   ],
+   "mix": [
+    0,
+    0,
+    0,
+    255
+   ]
+  },
+  {
+   "part": "Bronzer",
+   "engine": "BlusherImageMakeup",
+   "degree": 70,
+   "tex": [
+    "xr_SideFace.png"
+   ],
+   "opacity": 70,
+   "roi": [
+    95,
+    40,
+    901,
+    1081
+   ],
+   "mix": [
+    0,
+    0,
+    0,
+    255
+   ]
+  },
+  {
+   "part": "Bronzer",
+   "engine": "BlusherImageMakeup",
+   "degree": 70,
+   "tex": [
+    "gg.png"
+   ],
+   "opacity": 70,
+   "roi": [
+    95,
+    40,
+    901,
+    1081
+   ],
+   "mix": [
+    0,
+    0,
+    0,
+    255
+   ]
+  },
+  {
+   "part": "Eyebrow",
+   "engine": "NormalEyeBrowImageMakeup",
+   "degree": 70,
+   "tex": [
+    "mmz.png"
+   ],
+   "opacity": 40,
+   "roi": [
+    210,
+    410,
+    260,
+    110
+   ],
+   "mix": [
+    0,
+    0,
+    0,
+    255
+   ]
+  },
+  {
+   "part": "Eyebrow",
+   "engine": "NormalEyeBrowImageMakeup",
+   "degree": 70,
+   "tex": [
+    "mmy.png"
+   ],
+   "opacity": 40,
+   "roi": [
+    540,
+    410,
+    260,
+    110
+   ],
+   "mix": [
+    0,
+    0,
+    0,
+    255
+   ]
+  },
+  {
+   "part": "Eyelash",
+   "engine": "NormalEyeLashImageMakeup",
+   "degree": 70,
+   "tex": [
+    "jmz.png"
+   ],
+   "opacity": 75,
+   "roi": [
+    200,
+    400,
+    300,
+    300
+   ],
+   "mix": [
+    0,
+    0,
+    0,
+    255
+   ]
+  },
+  {
+   "part": "Eyelash",
+   "engine": "NormalEyeLashImageMakeup",
+   "degree": 70,
+   "tex": [
+    "jmy.png"
+   ],
+   "opacity": 75,
+   "roi": [
+    500,
+    400,
+    300,
+    300
+   ],
+   "mix": [
+    0,
+    0,
+    0,
+    255
+   ]
+  },
+  {
+   "part": "Eyeliner",
+   "engine": "NormalEyeImageMakeup",
+   "degree": 70,
+   "tex": [
+    "yxz.png"
+   ],
+   "opacity": 60,
+   "roi": [
+    200,
+    400,
+    300,
+    300
+   ],
+   "mix": [
+    0,
+    0,
+    0,
+    255
+   ]
+  },
+  {
+   "part": "Eyeliner",
+   "engine": "NormalEyeImageMakeup",
+   "degree": 70,
+   "tex": [
+    "yxy.png"
+   ],
+   "opacity": 60,
+   "roi": [
+    500,
+    400,
+    300,
+    300
+   ],
+   "mix": [
+    0,
+    0,
+    0,
+    255
+   ]
+  },
+  {
+   "part": "Eyemakeup",
+   "engine": "NormalEyeImageMakeup",
+   "degree": 70,
+   "tex": [
+    "yyz.png"
+   ],
+   "opacity": 70,
+   "roi": [
+    200,
+    400,
+    300,
+    300
+   ],
+   "mix": [
+    0,
+    0,
+    0,
+    255
+   ]
+  },
+  {
+   "part": "Eyemakeup",
+   "engine": "NormalEyeImageMakeup",
+   "degree": 70,
+   "tex": [
+    "yyy.png"
+   ],
+   "opacity": 70,
+   "roi": [
+    500,
+    400,
+    300,
+    300
+   ],
+   "mix": [
+    0,
+    0,
+    0,
+    255
+   ]
+  },
+  {
+   "part": "Eyemakeup",
+   "engine": "NormalEyeImageMakeup",
+   "degree": 70,
+   "tex": [
+    "lpz.png"
+   ],
+   "opacity": 70,
+   "roi": [
+    200,
+    400,
+    300,
+    300
+   ],
+   "mix": [
+    0,
+    0,
+    0,
+    255
+   ]
+  },
+  {
+   "part": "Eyemakeup",
+   "engine": "NormalEyeImageMakeup",
+   "degree": 70,
+   "tex": [
+    "lpy.png"
+   ],
+   "opacity": 70,
+   "roi": [
+    500,
+    400,
+    300,
+    300
+   ],
+   "mix": [
+    0,
+    0,
+    0,
+    255
+   ]
+  },
+  {
+   "part": "Lipstick",
+   "engine": "LipStickImageMakeup",
+   "degree": 70,
+   "tex": [
+    "zc.png"
+   ],
+   "opacity": 70,
+   "roi": [
+    350,
+    800,
+    300,
+    120
+   ],
+   "mix": [
+    0,
+    0,
+    0,
+    255
+   ]
+  },
+  {
+   "part": "Lipstick",
+   "engine": "LipStickImageMakeup",
+   "degree": 70,
+   "tex": [
+    "zcgg.png"
+   ],
+   "opacity": 70,
+   "roi": [
+    350,
+    800,
+    300,
+    120
+   ],
+   "mix": [
+    0,
+    0,
+    0,
+    255
+   ]
+  }
+ ],
+ "MU00000009": [
+  {
+   "part": "Blusher",
+   "engine": "BlusherImageMakeup",
+   "degree": 70,
+   "tex": [
+    "qb4.png"
+   ],
+   "opacity": 100,
+   "roi": [
+    95,
+    40,
+    901,
+    1081
+   ],
+   "mix": [
+    0,
+    0,
+    0,
+    255
+   ]
+  },
+  {
+   "part": "Blusher",
+   "engine": "BlusherImageMakeup",
+   "degree": 70,
+   "tex": [
+    "sh.png"
+   ],
+   "opacity": 90,
+   "roi": [
+    95,
+    40,
+    901,
+    1081
+   ],
+   "mix": [
+    0,
+    0,
+    0,
+    255
+   ]
+  },
+  {
+   "part": "Bronzer",
+   "engine": "BlusherImageMakeup",
+   "degree": 70,
+   "tex": [
+    "xr.png"
+   ],
+   "opacity": 100,
+   "roi": [
+    95,
+    40,
+    901,
+    1081
+   ],
+   "mix": [
+    0,
+    0,
+    0,
+    255
+   ]
+  },
+  {
+   "part": "Bronzer",
+   "engine": "BlusherImageMakeup",
+   "degree": 70,
+   "tex": [
+    "xr_SideFace.png"
+   ],
+   "opacity": 100,
+   "roi": [
+    95,
+    40,
+    901,
+    1081
+   ],
+   "mix": [
+    0,
+    0,
+    0,
+    255
+   ]
+  },
+  {
+   "part": "Eyebrow",
+   "engine": "NormalEyeBrowImageMakeup",
+   "degree": 70,
+   "tex": [
+    "mmz.png"
+   ],
+   "opacity": 40,
+   "roi": [
+    210,
+    410,
+    260,
+    110
+   ],
+   "mix": [
+    0,
+    0,
+    0,
+    255
+   ]
+  },
+  {
+   "part": "Eyebrow",
+   "engine": "NormalEyeBrowImageMakeup",
+   "degree": 70,
+   "tex": [
+    "mmy.png"
+   ],
+   "opacity": 40,
+   "roi": [
+    540,
+    410,
+    260,
+    110
+   ],
+   "mix": [
+    0,
+    0,
+    0,
+    255
+   ]
+  },
+  {
+   "part": "Eyelash",
+   "engine": "SymEyeLashImageMakeup",
+   "degree": 70,
+   "tex": [
+    "jmz.png"
+   ],
+   "opacity": 100,
+   "roi": [
+    200,
+    400,
+    300,
+    300
+   ],
+   "mix": [
+    0,
+    0,
+    0,
+    255
+   ]
+  },
+  {
+   "part": "Eyelash",
+   "engine": "SymEyeLashImageMakeup",
+   "degree": 70,
+   "tex": [
+    "jmy.png"
+   ],
+   "opacity": 100,
+   "roi": [
+    500,
+    400,
+    300,
+    300
+   ],
+   "mix": [
+    0,
+    0,
+    0,
+    255
+   ]
+  },
+  {
+   "part": "Eyeliner",
+   "engine": "NormalEyeImageMakeup",
+   "degree": 70,
+   "tex": [
+    "yxz.png"
+   ],
+   "opacity": 80,
+   "roi": [
+    200,
+    400,
+    300,
+    300
+   ],
+   "mix": [
+    0,
+    0,
+    0,
+    255
+   ]
+  },
+  {
+   "part": "Eyeliner",
+   "engine": "NormalEyeImageMakeup",
+   "degree": 70,
+   "tex": [
+    "yxy.png"
+   ],
+   "opacity": 80,
+   "roi": [
+    500,
+    400,
+    300,
+    300
+   ],
+   "mix": [
+    0,
+    0,
+    0,
+    255
+   ]
+  },
+  {
+   "part": "Eyemakeup",
+   "engine": "NormalEyeImageMakeup",
+   "degree": 70,
+   "tex": [
+    "yyz.png"
+   ],
+   "opacity": 100,
+   "roi": [
+    200,
+    400,
+    300,
+    300
+   ],
+   "mix": [
+    0,
+    0,
+    0,
+    255
+   ]
+  },
+  {
+   "part": "Eyemakeup",
+   "engine": "NormalEyeImageMakeup",
+   "degree": 70,
+   "tex": [
+    "yyy.png"
+   ],
+   "opacity": 100,
+   "roi": [
+    500,
+    400,
+    300,
+    300
+   ],
+   "mix": [
+    0,
+    0,
+    0,
+    255
+   ]
+  },
+  {
+   "part": "Lipstick",
+   "engine": "LipStickImageMakeup",
+   "degree": 70,
+   "tex": [
+    "zc.png"
+   ],
+   "opacity": 80,
+   "roi": [
+    350,
+    800,
+    300,
+    120
+   ],
+   "mix": [
+    0,
+    0,
+    0,
+    255
+   ]
+  }
+ ],
+ "MU00000010": [
+  {
+   "part": "Blusher",
+   "engine": "BlusherImageMakeup",
+   "degree": 70,
+   "tex": [
+    "sh.png"
+   ],
+   "opacity": 75,
+   "roi": [
+    95,
+    40,
+    901,
+    1081
+   ],
+   "mix": [
+    0,
+    0,
+    0,
+    255
+   ]
+  },
+  {
+   "part": "Bronzer",
+   "engine": "BlusherImageMakeup",
+   "degree": 70,
+   "tex": [
+    "xr.png"
+   ],
+   "opacity": 70,
+   "roi": [
+    95,
+    40,
+    901,
+    1081
+   ],
+   "mix": [
+    0,
+    0,
+    0,
+    255
+   ]
+  },
+  {
+   "part": "Bronzer",
+   "engine": "BlusherImageMakeup",
+   "degree": 70,
+   "tex": [
+    "xr_SideFace.png"
+   ],
+   "opacity": 70,
+   "roi": [
+    95,
+    40,
+    901,
+    1081
+   ],
+   "mix": [
+    0,
+    0,
+    0,
+    255
+   ]
+  },
+  {
+   "part": "Bronzer",
+   "engine": "BlusherImageMakeup",
+   "degree": 70,
+   "tex": [
+    "gg.png"
+   ],
+   "opacity": 60,
+   "roi": [
+    95,
+    40,
+    901,
+    1081
+   ],
+   "mix": [
+    0,
+    0,
+    0,
+    255
+   ]
+  },
+  {
+   "part": "Eyebrow",
+   "engine": "NormalEyeBrowImageMakeup",
+   "degree": 70,
+   "tex": [
+    "mmz.png"
+   ],
+   "opacity": 50,
+   "roi": [
+    210,
+    410,
+    260,
+    110
+   ],
+   "mix": [
+    0,
+    0,
+    0,
+    255
+   ]
+  },
+  {
+   "part": "Eyebrow",
+   "engine": "NormalEyeBrowImageMakeup",
+   "degree": 70,
+   "tex": [
+    "mmy.png"
+   ],
+   "opacity": 50,
+   "roi": [
+    540,
+    410,
+    260,
+    110
+   ],
+   "mix": [
+    0,
+    0,
+    0,
+    255
+   ]
+  },
+  {
+   "part": "Eyelash",
+   "engine": "SymEyeLashImageMakeup",
+   "degree": 70,
+   "tex": [
+    "lt.png"
+   ],
+   "opacity": 80,
+   "roi": [
+    200,
+    400,
+    300,
+    300
+   ],
+   "mix": [
+    0,
+    0,
+    0,
+    255
+   ]
+  },
+  {
+   "part": "Eyelash",
+   "engine": "SymEyeLashImageMakeup",
+   "degree": 70,
+   "tex": [
+    "rt.png"
+   ],
+   "opacity": 80,
+   "roi": [
+    500,
+    400,
+    300,
+    300
+   ],
+   "mix": [
+    0,
+    0,
+    0,
+    255
+   ]
+  },
+  {
+   "part": "Eyelash",
+   "engine": "SymEyeLashImageMakeup",
+   "degree": 70,
+   "tex": [
+    "lb.png"
+   ],
+   "opacity": 80,
+   "roi": [
+    200,
+    400,
+    300,
+    300
+   ],
+   "mix": [
+    0,
+    0,
+    0,
+    255
+   ]
+  },
+  {
+   "part": "Eyelash",
+   "engine": "SymEyeLashImageMakeup",
+   "degree": 70,
+   "tex": [
+    "rb.png"
+   ],
+   "opacity": 80,
+   "roi": [
+    500,
+    400,
+    300,
+    300
+   ],
+   "mix": [
+    0,
+    0,
+    0,
+    255
+   ]
+  },
+  {
+   "part": "Eyeliner",
+   "engine": "NormalEyeImageMakeup",
+   "degree": 70,
+   "tex": [
+    "yxz.png"
+   ],
+   "opacity": 70,
+   "roi": [
+    200,
+    400,
+    300,
+    300
+   ],
+   "mix": [
+    0,
+    0,
+    0,
+    255
+   ]
+  },
+  {
+   "part": "Eyeliner",
+   "engine": "NormalEyeImageMakeup",
+   "degree": 70,
+   "tex": [
+    "yxy.png"
+   ],
+   "opacity": 70,
+   "roi": [
+    500,
+    400,
+    300,
+    300
+   ],
+   "mix": [
+    0,
+    0,
+    0,
+    255
+   ]
+  },
+  {
+   "part": "Eyemakeup",
+   "engine": "NormalEyeImageMakeup",
+   "degree": 70,
+   "tex": [
+    "yyz.png"
+   ],
+   "opacity": 90,
+   "roi": [
+    200,
+    400,
+    300,
+    300
+   ],
+   "mix": [
+    0,
+    0,
+    0,
+    255
+   ]
+  },
+  {
+   "part": "Eyemakeup",
+   "engine": "NormalEyeImageMakeup",
+   "degree": 70,
+   "tex": [
+    "yyy.png"
+   ],
+   "opacity": 90,
+   "roi": [
+    500,
+    400,
+    300,
+    300
+   ],
+   "mix": [
+    0,
+    0,
+    0,
+    255
+   ]
+  },
+  {
+   "part": "Eyepupil",
+   "engine": "EyePupilMakeup",
+   "degree": 70,
+   "tex": [
+    "mt.png",
+    "eye_mask_left.png"
+   ],
+   "opacity": 22,
+   "roi": [
+    200,
+    400,
+    300,
+    300
+   ],
+   "mix": [
+    0,
+    0,
+    0,
+    255
+   ]
+  },
+  {
+   "part": "Eyepupil",
+   "engine": "EyePupilMakeup",
+   "degree": 70,
+   "tex": [
+    "mt.png",
+    "eye_mask_right.png"
+   ],
+   "opacity": 22,
+   "roi": [
+    500,
+    400,
+    300,
+    300
+   ],
+   "mix": [
+    0,
+    0,
+    0,
+    255
+   ]
+  },
+  {
+   "part": "Lipstick",
+   "engine": "LipStickImageMakeup",
+   "degree": 70,
+   "tex": [
+    "zc.png"
+   ],
+   "opacity": 60,
+   "roi": [
+    350,
+    800,
+    300,
+    120
+   ],
+   "mix": [
+    0,
+    0,
+    0,
+    255
+   ]
+  }
+ ],
+ "MU00000011": [
+  {
+   "part": "Blusher",
+   "engine": "BlusherImageMakeup",
+   "degree": 70,
+   "tex": [
+    "sh.png"
+   ],
+   "opacity": 60,
+   "roi": [
+    95,
+    40,
+    901,
+    1081
+   ],
+   "mix": [
+    0,
+    0,
+    0,
+    255
+   ]
+  },
+  {
+   "part": "Blusher",
+   "engine": "BlusherImageMakeup",
+   "degree": 70,
+   "tex": [
+    "gg.png"
+   ],
+   "opacity": 40,
+   "roi": [
+    95,
+    40,
+    901,
+    1081
+   ],
+   "mix": [
+    0,
+    0,
+    0,
+    255
+   ]
+  },
+  {
+   "part": "Bronzer",
+   "engine": "BlusherImageMakeup",
+   "degree": 70,
+   "tex": [
+    "xr.png"
+   ],
+   "opacity": 60,
+   "roi": [
+    95,
+    40,
+    901,
+    1081
+   ],
+   "mix": [
+    0,
+    0,
+    0,
+    255
+   ]
+  },
+  {
+   "part": "Bronzer",
+   "engine": "BlusherImageMakeup",
+   "degree": 70,
+   "tex": [
+    "xr_SideFace.png"
+   ],
+   "opacity": 60,
+   "roi": [
+    95,
+    40,
+    901,
+    1081
+   ],
+   "mix": [
+    0,
+    0,
+    0,
+    255
+   ]
+  },
+  {
+   "part": "Eyebrow",
+   "engine": "NormalEyeBrowImageMakeup",
+   "degree": 70,
+   "tex": [
+    "mmzd.png"
+   ],
+   "opacity": 30,
+   "roi": [
+    210,
+    410,
+    260,
+    110
+   ],
+   "mix": [
+    0,
+    0,
+    0,
+    255
+   ]
+  },
+  {
+   "part": "Eyebrow",
+   "engine": "NormalEyeBrowImageMakeup",
+   "degree": 70,
+   "tex": [
+    "mmyd.png"
+   ],
+   "opacity": 30,
+   "roi": [
+    540,
+    410,
+    260,
+    110
+   ],
+   "mix": [
+    0,
+    0,
+    0,
+    255
+   ]
+  },
+  {
+   "part": "Eyebrow",
+   "engine": "NormalEyeBrowImageMakeup",
+   "degree": 70,
+   "tex": [
+    "mmz.png"
+   ],
+   "opacity": 50,
+   "roi": [
+    210,
+    410,
+    260,
+    110
+   ],
+   "mix": [
+    0,
+    0,
+    0,
+    255
+   ]
+  },
+  {
+   "part": "Eyebrow",
+   "engine": "NormalEyeBrowImageMakeup",
+   "degree": 70,
+   "tex": [
+    "mmy.png"
+   ],
+   "opacity": 50,
+   "roi": [
+    540,
+    410,
+    260,
+    110
+   ],
+   "mix": [
+    0,
+    0,
+    0,
+    255
+   ]
+  },
+  {
+   "part": "Eyelash",
+   "engine": "SymEyeLashImageMakeup",
+   "degree": 70,
+   "tex": [
+    "lt.png"
+   ],
+   "opacity": 60,
+   "roi": [
+    200,
+    400,
+    300,
+    300
+   ],
+   "mix": [
+    0,
+    0,
+    0,
+    255
+   ]
+  },
+  {
+   "part": "Eyelash",
+   "engine": "SymEyeLashImageMakeup",
+   "degree": 70,
+   "tex": [
+    "rt.png"
+   ],
+   "opacity": 60,
+   "roi": [
+    500,
+    400,
+    300,
+    300
+   ],
+   "mix": [
+    0,
+    0,
+    0,
+    255
+   ]
+  },
+  {
+   "part": "Eyelash",
+   "engine": "SymEyeLashImageMakeup",
+   "degree": 70,
+   "tex": [
+    "lb.png"
+   ],
+   "opacity": 60,
+   "roi": [
+    200,
+    400,
+    300,
+    300
+   ],
+   "mix": [
+    0,
+    0,
+    0,
+    255
+   ]
+  },
+  {
+   "part": "Eyelash",
+   "engine": "SymEyeLashImageMakeup",
+   "degree": 70,
+   "tex": [
+    "rb.png"
+   ],
+   "opacity": 60,
+   "roi": [
+    500,
+    400,
+    300,
+    300
+   ],
+   "mix": [
+    0,
+    0,
+    0,
+    255
+   ]
+  },
+  {
+   "part": "Eyeliner",
+   "engine": "SymEyeImageMakeup",
+   "degree": 70,
+   "tex": [
+    "yxz.png"
+   ],
+   "opacity": 60,
+   "roi": [
+    200,
+    400,
+    300,
+    300
+   ],
+   "mix": [
+    0,
+    0,
+    0,
+    255
+   ]
+  },
+  {
+   "part": "Eyeliner",
+   "engine": "SymEyeImageMakeup",
+   "degree": 70,
+   "tex": [
+    "yxy.png"
+   ],
+   "opacity": 60,
+   "roi": [
+    500,
+    400,
+    300,
+    300
+   ],
+   "mix": [
+    0,
+    0,
+    0,
+    255
+   ]
+  },
+  {
+   "part": "Eyemakeup",
+   "engine": "SymEyeImageMakeup",
+   "degree": 70,
+   "tex": [
+    "yyz.png"
+   ],
+   "opacity": 45,
+   "roi": [
+    200,
+    400,
+    300,
+    300
+   ],
+   "mix": [
+    0,
+    0,
+    0,
+    255
+   ]
+  },
+  {
+   "part": "Eyemakeup",
+   "engine": "SymEyeImageMakeup",
+   "degree": 70,
+   "tex": [
+    "yyy.png"
+   ],
+   "opacity": 45,
+   "roi": [
+    500,
+    400,
+    300,
+    300
+   ],
+   "mix": [
+    0,
+    0,
+    0,
+    255
+   ]
+  },
+  {
+   "part": "Eyemakeup",
+   "engine": "SymEyeImageMakeup",
+   "degree": 70,
+   "tex": [
+    "lpz.png"
+   ],
+   "opacity": 50,
+   "roi": [
+    200,
+    400,
+    300,
+    300
+   ],
+   "mix": [
+    0,
+    0,
+    0,
+    255
+   ]
+  },
+  {
+   "part": "Eyemakeup",
+   "engine": "SymEyeImageMakeup",
+   "degree": 70,
+   "tex": [
+    "lpy.png"
+   ],
+   "opacity": 50,
+   "roi": [
+    500,
+    400,
+    300,
+    300
+   ],
+   "mix": [
+    0,
+    0,
+    0,
+    255
+   ]
+  },
+  {
+   "part": "Eyepupil",
+   "engine": "EyePupilMakeup",
+   "degree": 70,
+   "tex": [
+    "mt.png",
+    "eye_mask_left.png"
+   ],
+   "opacity": 35,
+   "roi": [
+    200,
+    400,
+    300,
+    300
+   ],
+   "mix": [
+    0,
+    0,
+    0,
+    255
+   ]
+  },
+  {
+   "part": "Eyepupil",
+   "engine": "EyePupilMakeup",
+   "degree": 70,
+   "tex": [
+    "mt.png",
+    "eye_mask_right.png"
+   ],
+   "opacity": 35,
+   "roi": [
+    500,
+    400,
+    300,
+    300
+   ],
+   "mix": [
+    0,
+    0,
+    0,
+    255
+   ]
+  },
+  {
+   "part": "Lipstick",
+   "engine": "LipStickImageMakeup",
+   "degree": 70,
+   "tex": [
+    "zc.png"
+   ],
+   "opacity": 70,
+   "roi": [
+    350,
+    800,
+    300,
+    120
+   ],
+   "mix": [
+    0,
+    0,
+    0,
+    255
+   ]
+  },
+  {
+   "part": "Lipstick",
+   "engine": "LipStickImageMakeup",
+   "degree": 70,
+   "tex": [
+    "zcgg.png"
+   ],
+   "opacity": 50,
+   "roi": [
+    350,
+    800,
+    300,
+    120
+   ],
+   "mix": [
+    0,
+    0,
+    0,
+    255
+   ]
+  }
+ ],
+ "MU00000012": [
+  {
+   "part": "Blusher",
+   "engine": "BlusherImageMakeup",
+   "degree": 70,
+   "tex": [
+    "sh.png"
+   ],
+   "opacity": 50,
+   "roi": [
+    95,
+    40,
+    901,
+    1081
+   ],
+   "mix": [
+    0,
+    0,
+    0,
+    255
+   ]
+  },
+  {
+   "part": "Bronzer",
+   "engine": "BlusherImageMakeup",
+   "degree": 70,
+   "tex": [
+    "xr.png"
+   ],
+   "opacity": 50,
+   "roi": [
+    95,
+    40,
+    901,
+    1081
+   ],
+   "mix": [
+    0,
+    0,
+    0,
+    255
+   ]
+  },
+  {
+   "part": "Bronzer",
+   "engine": "BlusherImageMakeup",
+   "degree": 70,
+   "tex": [
+    "xr_SideFace.png"
+   ],
+   "opacity": 50,
+   "roi": [
+    95,
+    40,
+    901,
+    1081
+   ],
+   "mix": [
+    0,
+    0,
+    0,
+    255
+   ]
+  },
+  {
+   "part": "Eyebrow",
+   "engine": "NormalEyeBrowImageMakeup",
+   "degree": 70,
+   "tex": [
+    "mmz.png"
+   ],
+   "opacity": 60,
+   "roi": [
+    210,
+    410,
+    260,
+    110
+   ],
+   "mix": [
+    0,
+    0,
+    0,
+    255
+   ]
+  },
+  {
+   "part": "Eyebrow",
+   "engine": "NormalEyeBrowImageMakeup",
+   "degree": 70,
+   "tex": [
+    "mmy.png"
+   ],
+   "opacity": 60,
+   "roi": [
+    540,
+    410,
+    260,
+    110
+   ],
+   "mix": [
+    0,
+    0,
+    0,
+    255
+   ]
+  },
+  {
+   "part": "Eyelash",
+   "engine": "SymEyeLashImageMakeup",
+   "degree": 70,
+   "tex": [
+    "lt.png"
+   ],
+   "opacity": 80,
+   "roi": [
+    200,
+    400,
+    300,
+    300
+   ],
+   "mix": [
+    0,
+    0,
+    0,
+    255
+   ]
+  },
+  {
+   "part": "Eyelash",
+   "engine": "SymEyeLashImageMakeup",
+   "degree": 70,
+   "tex": [
+    "rt.png"
+   ],
+   "opacity": 80,
+   "roi": [
+    500,
+    400,
+    300,
+    300
+   ],
+   "mix": [
+    0,
+    0,
+    0,
+    255
+   ]
+  },
+  {
+   "part": "Eyelash",
+   "engine": "SymEyeLashImageMakeup",
+   "degree": 70,
+   "tex": [
+    "lb.png"
+   ],
+   "opacity": 80,
+   "roi": [
+    200,
+    400,
+    300,
+    300
+   ],
+   "mix": [
+    0,
+    0,
+    0,
+    255
+   ]
+  },
+  {
+   "part": "Eyelash",
+   "engine": "SymEyeLashImageMakeup",
+   "degree": 70,
+   "tex": [
+    "rb.png"
+   ],
+   "opacity": 80,
+   "roi": [
+    500,
+    400,
+    300,
+    300
+   ],
+   "mix": [
+    0,
+    0,
+    0,
+    255
+   ]
+  },
+  {
+   "part": "Eyeliner",
+   "engine": "SymEyeImageMakeup",
+   "degree": 70,
+   "tex": [
+    "yxy.png"
+   ],
+   "opacity": 70,
+   "roi": [
+    500,
+    400,
+    300,
+    300
+   ],
+   "mix": [
+    0,
+    0,
+    0,
+    255
+   ]
+  },
+  {
+   "part": "Eyeliner",
+   "engine": "SymEyeImageMakeup",
+   "degree": 70,
+   "tex": [
+    "yxz.png"
+   ],
+   "opacity": 70,
+   "roi": [
+    200,
+    400,
+    300,
+    300
+   ],
+   "mix": [
+    0,
+    0,
+    0,
+    255
+   ]
+  },
+  {
+   "part": "Eyemakeup",
+   "engine": "SymEyeImageMakeup",
+   "degree": 70,
+   "tex": [
+    "yyz.png"
+   ],
+   "opacity": 50,
+   "roi": [
+    200,
+    400,
+    300,
+    300
+   ],
+   "mix": [
+    0,
+    0,
+    0,
+    255
+   ]
+  },
+  {
+   "part": "Eyemakeup",
+   "engine": "SymEyeImageMakeup",
+   "degree": 70,
+   "tex": [
+    "yyy.png"
+   ],
+   "opacity": 50,
+   "roi": [
+    500,
+    400,
+    300,
+    300
+   ],
+   "mix": [
+    0,
+    0,
+    0,
+    255
+   ]
+  },
+  {
+   "part": "Eyemakeup",
+   "engine": "SymEyeImageMakeup",
+   "degree": 70,
+   "tex": [
+    "lpz.png"
+   ],
+   "opacity": 20,
+   "roi": [
+    200,
+    400,
+    300,
+    300
+   ],
+   "mix": [
+    0,
+    0,
+    0,
+    255
+   ]
+  },
+  {
+   "part": "Eyemakeup",
+   "engine": "SymEyeImageMakeup",
+   "degree": 70,
+   "tex": [
+    "lpy.png"
+   ],
+   "opacity": 20,
+   "roi": [
+    500,
+    400,
+    300,
+    300
+   ],
+   "mix": [
+    0,
+    0,
+    0,
+    255
+   ]
+  },
+  {
+   "part": "Eyepupil",
+   "engine": "EyePupilMakeup",
+   "degree": 70,
+   "tex": [
+    "mt.png",
+    "eye_mask_left.png"
+   ],
+   "opacity": 35,
+   "roi": [
+    200,
+    400,
+    300,
+    300
+   ],
+   "mix": [
+    0,
+    0,
+    0,
+    255
+   ]
+  },
+  {
+   "part": "Eyepupil",
+   "engine": "EyePupilMakeup",
+   "degree": 70,
+   "tex": [
+    "mt.png",
+    "eye_mask_right.png"
+   ],
+   "opacity": 35,
+   "roi": [
+    500,
+    400,
+    300,
+    300
+   ],
+   "mix": [
+    0,
+    0,
+    0,
+    255
+   ]
+  },
+  {
+   "part": "Lipstick",
+   "engine": "LipStickImageMakeup",
+   "degree": 70,
+   "tex": [
+    "zc.png"
+   ],
+   "opacity": 60,
+   "roi": [
+    350,
+    800,
+    300,
+    120
+   ],
+   "mix": [
+    0,
+    0,
+    0,
+    255
+   ]
+  },
+  {
+   "part": "Lipstick",
+   "engine": "LipStickImageMakeup",
+   "degree": 70,
+   "tex": [
+    "zcgg.png"
+   ],
+   "opacity": 40,
+   "roi": [
+    350,
+    800,
+    300,
+    120
+   ],
+   "mix": [
+    0,
+    0,
+    0,
+    255
+   ]
+  }
+ ],
+ "MU00000013": [
+  {
+   "part": "Blusher",
+   "engine": "BlusherImageMakeup",
+   "degree": 70,
+   "tex": [
+    "sh.png"
+   ],
+   "opacity": 80,
+   "roi": [
+    95,
+    40,
+    901,
+    1081
+   ],
+   "mix": [
+    0,
+    0,
+    0,
+    255
+   ]
+  },
+  {
+   "part": "Bronzer",
+   "engine": "BlusherImageMakeup",
+   "degree": 70,
+   "tex": [
+    "xr.png"
+   ],
+   "opacity": 80,
+   "roi": [
+    95,
+    40,
+    901,
+    1081
+   ],
+   "mix": [
+    0,
+    0,
+    0,
+    255
+   ]
+  },
+  {
+   "part": "Bronzer",
+   "engine": "BlusherImageMakeup",
+   "degree": 70,
+   "tex": [
+    "xr_SideFace.png"
+   ],
+   "opacity": 80,
+   "roi": [
+    95,
+    40,
+    901,
+    1081
+   ],
+   "mix": [
+    0,
+    0,
+    0,
+    255
+   ]
+  },
+  {
+   "part": "Bronzer",
+   "engine": "BlusherImageMakeup",
+   "degree": 70,
+   "tex": [
+    "gg.png"
+   ],
+   "opacity": 70,
+   "roi": [
+    95,
+    40,
+    901,
+    1081
+   ],
+   "mix": [
+    0,
+    0,
+    0,
+    255
+   ]
+  },
+  {
+   "part": "Eyebrow",
+   "engine": "NormalEyeBrowImageMakeup",
+   "degree": 70,
+   "tex": [
+    "mmz.png"
+   ],
+   "opacity": 70,
+   "roi": [
+    210,
+    410,
+    260,
+    110
+   ],
+   "mix": [
+    0,
+    0,
+    0,
+    255
+   ]
+  },
+  {
+   "part": "Eyebrow",
+   "engine": "NormalEyeBrowImageMakeup",
+   "degree": 70,
+   "tex": [
+    "mmy.png"
+   ],
+   "opacity": 70,
+   "roi": [
+    540,
+    410,
+    260,
+    110
+   ],
+   "mix": [
+    0,
+    0,
+    0,
+    255
+   ]
+  },
+  {
+   "part": "Eyelash",
+   "engine": "SymEyeLashImageMakeup",
+   "degree": 70,
+   "tex": [
+    "lt.png"
+   ],
+   "opacity": 88,
+   "roi": [
+    200,
+    400,
+    300,
+    300
+   ],
+   "mix": [
+    0,
+    0,
+    0,
+    255
+   ]
+  },
+  {
+   "part": "Eyelash",
+   "engine": "SymEyeLashImageMakeup",
+   "degree": 70,
+   "tex": [
+    "rt.png"
+   ],
+   "opacity": 88,
+   "roi": [
+    500,
+    400,
+    300,
+    300
+   ],
+   "mix": [
+    0,
+    0,
+    0,
+    255
+   ]
+  },
+  {
+   "part": "Eyelash",
+   "engine": "SymEyeLashImageMakeup",
+   "degree": 70,
+   "tex": [
+    "lb.png"
+   ],
+   "opacity": 88,
+   "roi": [
+    200,
+    400,
+    300,
+    300
+   ],
+   "mix": [
+    0,
+    0,
+    0,
+    255
+   ]
+  },
+  {
+   "part": "Eyelash",
+   "engine": "SymEyeLashImageMakeup",
+   "degree": 70,
+   "tex": [
+    "rb.png"
+   ],
+   "opacity": 88,
+   "roi": [
+    500,
+    400,
+    300,
+    300
+   ],
+   "mix": [
+    0,
+    0,
+    0,
+    255
+   ]
+  },
+  {
+   "part": "Eyeliner",
+   "engine": "NormalEyeImageMakeup",
+   "degree": 70,
+   "tex": [
+    "yxz.png"
+   ],
+   "opacity": 70,
+   "roi": [
+    200,
+    400,
+    300,
+    300
+   ],
+   "mix": [
+    0,
+    0,
+    0,
+    255
+   ]
+  },
+  {
+   "part": "Eyeliner",
+   "engine": "NormalEyeImageMakeup",
+   "degree": 70,
+   "tex": [
+    "yxy.png"
+   ],
+   "opacity": 70,
+   "roi": [
+    500,
+    400,
+    300,
+    300
+   ],
+   "mix": [
+    0,
+    0,
+    0,
+    255
+   ]
+  },
+  {
+   "part": "Eyemakeup",
+   "engine": "NormalEyeImageMakeup",
+   "degree": 70,
+   "tex": [
+    "yyz.png"
+   ],
+   "opacity": 100,
+   "roi": [
+    200,
+    400,
+    300,
+    300
+   ],
+   "mix": [
+    0,
+    0,
+    0,
+    255
+   ]
+  },
+  {
+   "part": "Eyemakeup",
+   "engine": "NormalEyeImageMakeup",
+   "degree": 70,
+   "tex": [
+    "yyy.png"
+   ],
+   "opacity": 100,
+   "roi": [
+    500,
+    400,
+    300,
+    300
+   ],
+   "mix": [
+    0,
+    0,
+    0,
+    255
+   ]
+  },
+  {
+   "part": "Eyepupil",
+   "engine": "EyePupilMakeup",
+   "degree": 70,
+   "tex": [
+    "mt.png",
+    "eye_mask_left.png"
+   ],
+   "opacity": 25,
+   "roi": [
+    200,
+    400,
+    300,
+    300
+   ],
+   "mix": [
+    0,
+    0,
+    0,
+    255
+   ]
+  },
+  {
+   "part": "Eyepupil",
+   "engine": "EyePupilMakeup",
+   "degree": 70,
+   "tex": [
+    "mt.png",
+    "eye_mask_right.png"
+   ],
+   "opacity": 25,
+   "roi": [
+    500,
+    400,
+    300,
+    300
+   ],
+   "mix": [
+    0,
+    0,
+    0,
+    255
+   ]
+  },
+  {
+   "part": "Lipstick",
+   "engine": "LipStickImageMakeup",
+   "degree": 70,
+   "tex": [
+    "zc.png"
+   ],
+   "opacity": 60,
+   "roi": [
+    350,
+    800,
+    300,
+    120
+   ],
+   "mix": [
+    0,
+    0,
+    0,
+    255
+   ]
+  }
+ ],
+ "MU00000014": [
+  {
+   "part": "Blusher",
+   "engine": "BlusherImageMakeup",
+   "degree": 70,
+   "tex": [
+    "sh.png"
+   ],
+   "opacity": 90,
+   "roi": [
+    95,
+    40,
+    901,
+    1081
+   ],
+   "mix": [
+    0,
+    0,
+    0,
+    255
+   ]
+  },
+  {
+   "part": "Bronzer",
+   "engine": "BlusherImageMakeup",
+   "degree": 70,
+   "tex": [
+    "xr.png"
+   ],
+   "opacity": 60,
+   "roi": [
+    95,
+    40,
+    901,
+    1081
+   ],
+   "mix": [
+    0,
+    0,
+    0,
+    255
+   ]
+  },
+  {
+   "part": "Bronzer",
+   "engine": "BlusherImageMakeup",
+   "degree": 70,
+   "tex": [
+    "xr_SideFace.png"
+   ],
+   "opacity": 60,
+   "roi": [
+    95,
+    40,
+    901,
+    1081
+   ],
+   "mix": [
+    0,
+    0,
+    0,
+    255
+   ]
+  },
+  {
+   "part": "Eyebrow",
+   "engine": "NormalEyeBrowImageMakeup",
+   "degree": 70,
+   "tex": [
+    "mmz.png"
+   ],
+   "opacity": 60,
+   "roi": [
+    210,
+    410,
+    260,
+    110
+   ],
+   "mix": [
+    0,
+    0,
+    0,
+    255
+   ]
+  },
+  {
+   "part": "Eyebrow",
+   "engine": "NormalEyeBrowImageMakeup",
+   "degree": 70,
+   "tex": [
+    "mmy.png"
+   ],
+   "opacity": 60,
+   "roi": [
+    540,
+    410,
+    260,
+    110
+   ],
+   "mix": [
+    0,
+    0,
+    0,
+    255
+   ]
+  },
+  {
+   "part": "Eyelash",
+   "engine": "SymEyeLashImageMakeup",
+   "degree": 70,
+   "tex": [
+    "lt.png"
+   ],
+   "opacity": 60,
+   "roi": [
+    200,
+    400,
+    300,
+    300
+   ],
+   "mix": [
+    0,
+    0,
+    0,
+    255
+   ]
+  },
+  {
+   "part": "Eyelash",
+   "engine": "SymEyeLashImageMakeup",
+   "degree": 70,
+   "tex": [
+    "rt.png"
+   ],
+   "opacity": 60,
+   "roi": [
+    500,
+    400,
+    300,
+    300
+   ],
+   "mix": [
+    0,
+    0,
+    0,
+    255
+   ]
+  },
+  {
+   "part": "Eyelash",
+   "engine": "SymEyeLashImageMakeup",
+   "degree": 70,
+   "tex": [
+    "lb.png"
+   ],
+   "opacity": 60,
+   "roi": [
+    200,
+    400,
+    300,
+    300
+   ],
+   "mix": [
+    0,
+    0,
+    0,
+    255
+   ]
+  },
+  {
+   "part": "Eyelash",
+   "engine": "SymEyeLashImageMakeup",
+   "degree": 70,
+   "tex": [
+    "rb.png"
+   ],
+   "opacity": 60,
+   "roi": [
+    500,
+    400,
+    300,
+    300
+   ],
+   "mix": [
+    0,
+    0,
+    0,
+    255
+   ]
+  },
+  {
+   "part": "Eyeliner",
+   "engine": "SymEyeImageMakeup",
+   "degree": 70,
+   "tex": [
+    "yxz.png"
+   ],
+   "opacity": 60,
+   "roi": [
+    200,
+    400,
+    300,
+    300
+   ],
+   "mix": [
+    0,
+    0,
+    0,
+    255
+   ]
+  },
+  {
+   "part": "Eyeliner",
+   "engine": "SymEyeImageMakeup",
+   "degree": 70,
+   "tex": [
+    "yxy.png"
+   ],
+   "opacity": 60,
+   "roi": [
+    500,
+    400,
+    300,
+    300
+   ],
+   "mix": [
+    0,
+    0,
+    0,
+    255
+   ]
+  },
+  {
+   "part": "Eyemakeup",
+   "engine": "SymEyeImageMakeup",
+   "degree": 70,
+   "tex": [
+    "yyz.png"
+   ],
+   "opacity": 55,
+   "roi": [
+    200,
+    400,
+    300,
+    300
+   ],
+   "mix": [
+    0,
+    0,
+    0,
+    255
+   ]
+  },
+  {
+   "part": "Eyemakeup",
+   "engine": "SymEyeImageMakeup",
+   "degree": 70,
+   "tex": [
+    "yyy.png"
+   ],
+   "opacity": 55,
+   "roi": [
+    500,
+    400,
+    300,
+    300
+   ],
+   "mix": [
+    0,
+    0,
+    0,
+    255
+   ]
+  },
+  {
+   "part": "Eyepupil",
+   "engine": "EyePupilMakeup",
+   "degree": 70,
+   "tex": [
+    "mt.png",
+    "eye_mask_left.png"
+   ],
+   "opacity": 35,
+   "roi": [
+    200,
+    400,
+    300,
+    300
+   ],
+   "mix": [
+    0,
+    0,
+    0,
+    255
+   ]
+  },
+  {
+   "part": "Eyepupil",
+   "engine": "EyePupilMakeup",
+   "degree": 70,
+   "tex": [
+    "mt.png",
+    "eye_mask_right.png"
+   ],
+   "opacity": 35,
+   "roi": [
+    500,
+    400,
+    300,
+    300
+   ],
+   "mix": [
+    0,
+    0,
+    0,
+    255
+   ]
+  },
+  {
+   "part": "Lipstick",
+   "engine": "LipStickImageMakeup",
+   "degree": 70,
+   "tex": [
+    "zc.png"
+   ],
+   "opacity": 70,
+   "roi": [
+    350,
+    800,
+    300,
+    120
+   ],
+   "mix": [
+    0,
+    0,
+    0,
+    255
+   ]
+  }
+ ],
+ "MU00000015": [
+  {
+   "part": "Bronzer",
+   "engine": "BlusherImageMakeup",
+   "degree": 70,
+   "tex": [
+    "xr.png"
+   ],
+   "opacity": 55,
+   "roi": [
+    95,
+    40,
+    901,
+    1081
+   ],
+   "mix": [
+    0,
+    0,
+    0,
+    255
+   ]
+  },
+  {
+   "part": "Bronzer",
+   "engine": "BlusherImageMakeup",
+   "degree": 70,
+   "tex": [
+    "xr_SideFace.png"
+   ],
+   "opacity": 55,
+   "roi": [
+    95,
+    40,
+    901,
+    1081
+   ],
+   "mix": [
+    0,
+    0,
+    0,
+    255
+   ]
+  },
+  {
+   "part": "Eyebrow",
+   "engine": "NormalEyeBrowImageMakeup",
+   "degree": 70,
+   "tex": [
+    "mmz.png"
+   ],
+   "opacity": 55,
+   "roi": [
+    210,
+    410,
+    260,
+    110
+   ],
+   "mix": [
+    0,
+    0,
+    0,
+    255
+   ]
+  },
+  {
+   "part": "Eyebrow",
+   "engine": "NormalEyeBrowImageMakeup",
+   "degree": 70,
+   "tex": [
+    "mmy.png"
+   ],
+   "opacity": 55,
+   "roi": [
+    540,
+    410,
+    260,
+    110
+   ],
+   "mix": [
+    0,
+    0,
+    0,
+    255
+   ]
+  },
+  {
+   "part": "Eyeliner",
+   "engine": "SymEyeImageMakeup",
+   "degree": 70,
+   "tex": [
+    "yxy.png"
+   ],
+   "opacity": 70,
+   "roi": [
+    500,
+    400,
+    300,
+    300
+   ],
+   "mix": [
+    0,
+    0,
+    0,
+    255
+   ]
+  },
+  {
+   "part": "Eyeliner",
+   "engine": "SymEyeImageMakeup",
+   "degree": 70,
+   "tex": [
+    "yxz.png"
+   ],
+   "opacity": 70,
+   "roi": [
+    200,
+    400,
+    300,
+    300
+   ],
+   "mix": [
+    0,
+    0,
+    0,
+    255
+   ]
+  },
+  {
+   "part": "Eyemakeup",
+   "engine": "SymEyeImageMakeup",
+   "degree": 70,
+   "tex": [
+    "yyz.png"
+   ],
+   "opacity": 60,
+   "roi": [
+    200,
+    400,
+    300,
+    300
+   ],
+   "mix": [
+    0,
+    0,
+    0,
+    255
+   ]
+  },
+  {
+   "part": "Eyemakeup",
+   "engine": "SymEyeImageMakeup",
+   "degree": 70,
+   "tex": [
+    "yyy.png"
+   ],
+   "opacity": 60,
+   "roi": [
+    500,
+    400,
+    300,
+    300
+   ],
+   "mix": [
+    0,
+    0,
+    0,
+    255
+   ]
+  },
+  {
+   "part": "Lipstick",
+   "engine": "LipStickImageMakeup",
+   "degree": 70,
+   "tex": [
+    "zc.png"
+   ],
+   "opacity": 45,
+   "roi": [
+    350,
+    800,
+    300,
+    120
+   ],
+   "mix": [
+    0,
+    0,
+    0,
+    255
+   ]
+  }
+ ],
+ "MU00000016": [
+  {
+   "part": "Blusher",
+   "engine": "BlusherImageMakeup",
+   "degree": 70,
+   "tex": [
+    "sh.png"
+   ],
+   "opacity": 40,
+   "roi": [
+    95,
+    40,
+    901,
+    1081
+   ],
+   "mix": [
+    0,
+    0,
+    0,
+    255
+   ]
+  },
+  {
+   "part": "Bronzer",
+   "engine": "BlusherImageMakeup",
+   "degree": 70,
+   "tex": [
+    "xr.png"
+   ],
+   "opacity": 20,
+   "roi": [
+    95,
+    40,
+    901,
+    1081
+   ],
+   "mix": [
+    0,
+    0,
+    0,
+    255
+   ]
+  },
+  {
+   "part": "Bronzer",
+   "engine": "BlusherImageMakeup",
+   "degree": 70,
+   "tex": [
+    "gg.png"
+   ],
+   "opacity": 40,
+   "roi": [
+    95,
+    40,
+    901,
+    1081
+   ],
+   "mix": [
+    0,
+    0,
+    0,
+    255
+   ]
+  },
+  {
+   "part": "Bronzer",
+   "engine": "BlusherImageMakeup",
+   "degree": 70,
+   "tex": [
+    "xr_SideFace.png"
+   ],
+   "opacity": 55,
+   "roi": [
+    95,
+    40,
+    901,
+    1081
+   ],
+   "mix": [
+    0,
+    0,
+    0,
+    255
+   ]
+  },
+  {
+   "part": "Eyebrow",
+   "engine": "SymEyeBrowImageMakeup",
+   "degree": 70,
+   "tex": [
+    "mmz.png"
+   ],
+   "opacity": 25,
+   "roi": [
+    210,
+    410,
+    290,
+    110
+   ],
+   "mix": [
+    33,
+    17,
+    14,
+    255
+   ]
+  },
+  {
+   "part": "Eyelash",
+   "engine": "SymEyeLashImageMakeup",
+   "degree": 70,
+   "tex": [
+    "lt.png"
+   ],
+   "opacity": 90,
+   "roi": [
+    200,
+    400,
+    300,
+    300
+   ],
+   "mix": [
+    0,
+    0,
+    0,
+    255
+   ]
+  },
+  {
+   "part": "Eyelash",
+   "engine": "SymEyeLashImageMakeup",
+   "degree": 70,
+   "tex": [
+    "rt.png"
+   ],
+   "opacity": 90,
+   "roi": [
+    500,
+    400,
+    300,
+    300
+   ],
+   "mix": [
+    0,
+    0,
+    0,
+    255
+   ]
+  },
+  {
+   "part": "Eyelash",
+   "engine": "SymEyeLashImageMakeup",
+   "degree": 70,
+   "tex": [
+    "lb.png"
+   ],
+   "opacity": 100,
+   "roi": [
+    200,
+    400,
+    300,
+    300
+   ],
+   "mix": [
+    0,
+    0,
+    0,
+    255
+   ]
+  },
+  {
+   "part": "Eyelash",
+   "engine": "SymEyeLashImageMakeup",
+   "degree": 70,
+   "tex": [
+    "rb.png"
+   ],
+   "opacity": 80,
+   "roi": [
+    500,
+    400,
+    300,
+    300
+   ],
+   "mix": [
+    0,
+    0,
+    0,
+    255
+   ]
+  },
+  {
+   "part": "Eyeliner",
+   "engine": "SymEyeImageMakeup",
+   "degree": 70,
+   "tex": [
+    "yxz.png"
+   ],
+   "opacity": 50,
+   "roi": [
+    200,
+    400,
+    300,
+    300
+   ],
+   "mix": [
+    0,
+    0,
+    0,
+    255
+   ]
+  },
+  {
+   "part": "Eyeliner",
+   "engine": "SymEyeImageMakeup",
+   "degree": 70,
+   "tex": [
+    "yxy.png"
+   ],
+   "opacity": 50,
+   "roi": [
+    500,
+    400,
+    300,
+    300
+   ],
+   "mix": [
+    0,
+    0,
+    0,
+    255
+   ]
+  },
+  {
+   "part": "Eyemakeup",
+   "engine": "SymEyeImageMakeup",
+   "degree": 70,
+   "tex": [
+    "yyz.png"
+   ],
+   "opacity": 60,
+   "roi": [
+    200,
+    400,
+    300,
+    300
+   ],
+   "mix": [
+    0,
+    0,
+    0,
+    255
+   ]
+  },
+  {
+   "part": "Eyemakeup",
+   "engine": "SymEyeImageMakeup",
+   "degree": 70,
+   "tex": [
+    "yyy.png"
+   ],
+   "opacity": 60,
+   "roi": [
+    500,
+    400,
+    300,
+    300
+   ],
+   "mix": [
+    0,
+    0,
+    0,
+    255
+   ]
+  },
+  {
+   "part": "Lipstick",
+   "engine": "LipStickImageMakeup",
+   "degree": 70,
+   "tex": [
+    "zc.png"
+   ],
+   "opacity": 80,
+   "roi": [
+    350,
+    800,
+    300,
+    120
+   ],
+   "mix": [
+    0,
+    0,
+    0,
+    255
+   ]
+  }
+ ],
+ "MU00000017": [
+  {
+   "part": "Bronzer",
+   "engine": "BlusherImageMakeup",
+   "degree": 70,
+   "tex": [
+    "xr.png"
+   ],
+   "opacity": 45,
+   "roi": [
+    95,
+    40,
+    901,
+    1081
+   ],
+   "mix": [
+    0,
+    0,
+    0,
+    255
+   ]
+  },
+  {
+   "part": "Bronzer",
+   "engine": "BlusherImageMakeup",
+   "degree": 70,
+   "tex": [
+    "gg.png"
+   ],
+   "opacity": 25,
+   "roi": [
+    95,
+    40,
+    901,
+    1081
+   ],
+   "mix": [
+    0,
+    0,
+    0,
+    255
+   ]
+  },
+  {
+   "part": "Bronzer",
+   "engine": "BlusherImageMakeup",
+   "degree": 70,
+   "tex": [
+    "xr_SideFace.png"
+   ],
+   "opacity": 80,
+   "roi": [
+    95,
+    40,
+    901,
+    1081
+   ],
+   "mix": [
+    0,
+    0,
+    0,
+    255
+   ]
+  },
+  {
+   "part": "Eyebrow",
+   "engine": "NormalEyeBrowImageMakeup",
+   "degree": 70,
+   "tex": [
+    "mmz.png"
+   ],
+   "opacity": 45,
+   "roi": [
+    210,
+    410,
+    260,
+    110
+   ],
+   "mix": [
+    0,
+    0,
+    0,
+    255
+   ]
+  },
+  {
+   "part": "Eyebrow",
+   "engine": "NormalEyeBrowImageMakeup",
+   "degree": 70,
+   "tex": [
+    "mmy.png"
+   ],
+   "opacity": 45,
+   "roi": [
+    540,
+    410,
+    260,
+    110
+   ],
+   "mix": [
+    0,
+    0,
+    0,
+    255
+   ]
+  },
+  {
+   "part": "Eyemakeup",
+   "engine": "SymEyeImageMakeup",
+   "degree": 70,
+   "tex": [
+    "yyz.png"
+   ],
+   "opacity": 45,
+   "roi": [
+    200,
+    400,
+    300,
+    300
+   ],
+   "mix": [
+    0,
+    0,
+    0,
+    255
+   ]
+  },
+  {
+   "part": "Eyemakeup",
+   "engine": "SymEyeImageMakeup",
+   "degree": 70,
+   "tex": [
+    "yyy.png"
+   ],
+   "opacity": 45,
+   "roi": [
+    500,
+    400,
+    300,
+    300
+   ],
+   "mix": [
+    0,
+    0,
+    0,
+    255
+   ]
+  },
+  {
+   "part": "Lipstick",
+   "engine": "LipStickImageMakeup",
+   "degree": 70,
+   "tex": [
+    "zc.png"
+   ],
+   "opacity": 32,
+   "roi": [
+    350,
+    800,
+    300,
+    120
+   ],
+   "mix": [
+    0,
+    0,
+    0,
+    255
+   ]
+  },
+  {
+   "part": "Lipstick",
+   "engine": "LipStickImageMakeup",
+   "degree": 70,
+   "tex": [
+    "zcgg.png"
+   ],
+   "opacity": 20,
+   "roi": [
+    350,
+    800,
+    300,
+    120
+   ],
+   "mix": [
+    0,
+    0,
+    0,
+    255
+   ]
+  }
+ ],
+ "MU00000018": [
+  {
+   "part": "Blusher",
+   "engine": "BlusherImageMakeup",
+   "degree": 70,
+   "tex": [
+    "sh.png"
+   ],
+   "opacity": 100,
+   "roi": [
+    95,
+    40,
+    901,
+    1081
+   ],
+   "mix": [
+    0,
+    0,
+    0,
+    255
+   ]
+  },
+  {
+   "part": "Bronzer",
+   "engine": "BlusherImageMakeup",
+   "degree": 70,
+   "tex": [
+    "xr.png"
+   ],
+   "opacity": 10,
+   "roi": [
+    95,
+    40,
+    901,
+    1081
+   ],
+   "mix": [
+    0,
+    0,
+    0,
+    255
+   ]
+  },
+  {
+   "part": "Bronzer",
+   "engine": "BlusherImageMakeup",
+   "degree": 70,
+   "tex": [
+    "gg.png"
+   ],
+   "opacity": 80,
+   "roi": [
+    95,
+    40,
+    901,
+    1081
+   ],
+   "mix": [
+    0,
+    0,
+    0,
+    255
+   ]
+  },
+  {
+   "part": "Bronzer",
+   "engine": "BlusherImageMakeup",
+   "degree": 70,
+   "tex": [
+    "xr_SideFace.png"
+   ],
+   "opacity": 40,
+   "roi": [
+    95,
+    40,
+    901,
+    1081
+   ],
+   "mix": [
+    0,
+    0,
+    0,
+    255
+   ]
+  },
+  {
+   "part": "Eyebrow",
+   "engine": "SymEyeBrowImageMakeup",
+   "degree": 70,
+   "tex": [
+    "mmz.png"
+   ],
+   "opacity": 35,
+   "roi": [
+    210,
+    410,
+    290,
+    110
+   ],
+   "mix": [
+    33,
+    17,
+    14,
+    255
+   ]
+  },
+  {
+   "part": "Eyelash",
+   "engine": "SymEyeLashImageMakeup",
+   "degree": 70,
+   "tex": [
+    "jmzs.png"
+   ],
+   "opacity": 100,
+   "roi": [
+    200,
+    400,
+    300,
+    300
+   ],
+   "mix": [
+    44,
+    26,
+    24,
+    255
+   ]
+  },
+  {
+   "part": "Eyelash",
+   "engine": "SymEyeLashImageMakeup",
+   "degree": 70,
+   "tex": [
+    "jmys.png"
+   ],
+   "opacity": 100,
+   "roi": [
+    500,
+    400,
+    300,
+    300
+   ],
+   "mix": [
+    44,
+    26,
+    24,
+    255
+   ]
+  },
+  {
+   "part": "Eyelash",
+   "engine": "SymEyeLashImageMakeup",
+   "degree": 70,
+   "tex": [
+    "jmzx.png"
+   ],
+   "opacity": 100,
+   "roi": [
+    200,
+    400,
+    300,
+    300
+   ],
+   "mix": [
+    51,
+    32,
+    29,
+    255
+   ]
+  },
+  {
+   "part": "Eyelash",
+   "engine": "SymEyeLashImageMakeup",
+   "degree": 70,
+   "tex": [
+    "jmyx.png"
+   ],
+   "opacity": 100,
+   "roi": [
+    500,
+    400,
+    300,
+    300
+   ],
+   "mix": [
+    51,
+    32,
+    29,
+    255
+   ]
+  },
+  {
+   "part": "Eyeliner",
+   "engine": "SymEyeImageMakeup",
+   "degree": 70,
+   "tex": [
+    "yxz.png"
+   ],
+   "opacity": 70,
+   "roi": [
+    200,
+    400,
+    300,
+    300
+   ],
+   "mix": [
+    0,
+    0,
+    0,
+    255
+   ]
+  },
+  {
+   "part": "Eyeliner",
+   "engine": "SymEyeImageMakeup",
+   "degree": 70,
+   "tex": [
+    "yxy.png"
+   ],
+   "opacity": 70,
+   "roi": [
+    500,
+    400,
+    300,
+    300
+   ],
+   "mix": [
+    0,
+    0,
+    0,
+    255
+   ]
+  },
+  {
+   "part": "Eyemakeup",
+   "engine": "SymEyeImageMakeup",
+   "degree": 70,
+   "tex": [
+    "yyz.png"
+   ],
+   "opacity": 65,
+   "roi": [
+    200,
+    400,
+    300,
+    300
+   ],
+   "mix": [
+    0,
+    0,
+    0,
+    255
+   ]
+  },
+  {
+   "part": "Eyemakeup",
+   "engine": "SymEyeImageMakeup",
+   "degree": 70,
+   "tex": [
+    "yyy.png"
+   ],
+   "opacity": 65,
+   "roi": [
+    500,
+    400,
+    300,
+    300
+   ],
+   "mix": [
+    0,
+    0,
+    0,
+    255
+   ]
+  },
+  {
+   "part": "Eyemakeup",
+   "engine": "SymEyeImageMakeup",
+   "degree": 70,
+   "tex": [
+    "yyggz.png"
+   ],
+   "opacity": 100,
+   "roi": [
+    200,
+    400,
+    300,
+    300
+   ],
+   "mix": [
+    0,
+    0,
+    0,
+    255
+   ]
+  },
+  {
+   "part": "Eyemakeup",
+   "engine": "SymEyeImageMakeup",
+   "degree": 70,
+   "tex": [
+    "yyggy.png"
+   ],
+   "opacity": 100,
+   "roi": [
+    500,
+    400,
+    300,
+    300
+   ],
+   "mix": [
+    0,
+    0,
+    0,
+    255
+   ]
+  },
+  {
+   "part": "Lipstick",
+   "engine": "LipStickImageMakeup",
+   "degree": 70,
+   "tex": [
+    "zc.png"
+   ],
+   "opacity": 60,
+   "roi": [
+    350,
+    800,
+    300,
+    120
+   ],
+   "mix": [
+    0,
+    0,
+    0,
+    255
+   ]
+  },
+  {
+   "part": "Lipstick",
+   "engine": "LipColor",
+   "degree": 70,
+   "tex": null,
+   "opacity": null,
+   "roi": null,
+   "mix": null
+  }
+ ],
+ "MU00000019": [
+  {
+   "part": "Blusher",
+   "engine": "BlusherImageMakeup",
+   "degree": 70,
+   "tex": [
+    "sh.png"
+   ],
+   "opacity": 65,
+   "roi": [
+    95,
+    40,
+    901,
+    1081
+   ],
+   "mix": [
+    0,
+    0,
+    0,
+    255
+   ]
+  },
+  {
+   "part": "Bronzer",
+   "engine": "BlusherImageMakeup",
+   "degree": 70,
+   "tex": [
+    "xr.png"
+   ],
+   "opacity": 25,
+   "roi": [
+    95,
+    40,
+    901,
+    1081
+   ],
+   "mix": [
+    0,
+    0,
+    0,
+    255
+   ]
+  },
+  {
+   "part": "Bronzer",
+   "engine": "BlusherImageMakeup",
+   "degree": 70,
+   "tex": [
+    "gg.png"
+   ],
+   "opacity": 85,
+   "roi": [
+    95,
+    40,
+    901,
+    1081
+   ],
+   "mix": [
+    0,
+    0,
+    0,
+    255
+   ]
+  },
+  {
+   "part": "Bronzer",
+   "engine": "BlusherImageMakeup",
+   "degree": 70,
+   "tex": [
+    "xr_SideFace.png"
+   ],
+   "opacity": 55,
+   "roi": [
+    95,
+    40,
+    901,
+    1081
+   ],
+   "mix": [
+    0,
+    0,
+    0,
+    255
+   ]
+  },
+  {
+   "part": "Eyebrow",
+   "engine": "SymEyeBrowImageMakeup",
+   "degree": 70,
+   "tex": [
+    "mmz.png"
+   ],
+   "opacity": 25,
+   "roi": [
+    210,
+    410,
+    290,
+    110
+   ],
+   "mix": [
+    33,
+    17,
+    14,
+    255
+   ]
+  },
+  {
+   "part": "Eyelash",
+   "engine": "SymEyeLashImageMakeup",
+   "degree": 70,
+   "tex": [
+    "lt.png"
+   ],
+   "opacity": 100,
+   "roi": [
+    200,
+    400,
+    300,
+    300
+   ],
+   "mix": [
+    0,
+    0,
+    0,
+    255
+   ]
+  },
+  {
+   "part": "Eyelash",
+   "engine": "SymEyeLashImageMakeup",
+   "degree": 70,
+   "tex": [
+    "rt.png"
+   ],
+   "opacity": 100,
+   "roi": [
+    500,
+    400,
+    300,
+    300
+   ],
+   "mix": [
+    0,
+    0,
+    0,
+    255
+   ]
+  },
+  {
+   "part": "Eyelash",
+   "engine": "SymEyeLashImageMakeup",
+   "degree": 70,
+   "tex": [
+    "lb.png"
+   ],
+   "opacity": 100,
+   "roi": [
+    200,
+    400,
+    300,
+    300
+   ],
+   "mix": [
+    0,
+    0,
+    0,
+    255
+   ]
+  },
+  {
+   "part": "Eyelash",
+   "engine": "SymEyeLashImageMakeup",
+   "degree": 70,
+   "tex": [
+    "rb.png"
+   ],
+   "opacity": 100,
+   "roi": [
+    500,
+    400,
+    300,
+    300
+   ],
+   "mix": [
+    0,
+    0,
+    0,
+    255
+   ]
+  },
+  {
+   "part": "Eyemakeup",
+   "engine": "SymEyeImageMakeup",
+   "degree": 70,
+   "tex": [
+    "yyz.png"
+   ],
+   "opacity": 60,
+   "roi": [
+    200,
+    400,
+    300,
+    300
+   ],
+   "mix": [
+    0,
+    0,
+    0,
+    255
+   ]
+  },
+  {
+   "part": "Eyemakeup",
+   "engine": "SymEyeImageMakeup",
+   "degree": 70,
+   "tex": [
+    "yyy.png"
+   ],
+   "opacity": 60,
+   "roi": [
+    500,
+    400,
+    300,
+    300
+   ],
+   "mix": [
+    0,
+    0,
+    0,
+    255
+   ]
+  },
+  {
+   "part": "Eyemakeup",
+   "engine": "SymEyeImageMakeup",
+   "degree": 70,
+   "tex": [
+    "yyggz.png"
+   ],
+   "opacity": 60,
+   "roi": [
+    200,
+    400,
+    300,
+    300
+   ],
+   "mix": [
+    0,
+    0,
+    0,
+    255
+   ]
+  },
+  {
+   "part": "Eyemakeup",
+   "engine": "SymEyeImageMakeup",
+   "degree": 70,
+   "tex": [
+    "yyggy.png"
+   ],
+   "opacity": 60,
+   "roi": [
+    500,
+    400,
+    300,
+    300
+   ],
+   "mix": [
+    0,
+    0,
+    0,
+    255
+   ]
+  },
+  {
+   "part": "Lipstick",
+   "engine": "LipStickImageMakeup",
+   "degree": 70,
+   "tex": [
+    "zc.png"
+   ],
+   "opacity": 70,
+   "roi": [
+    350,
+    800,
+    300,
+    120
+   ],
+   "mix": [
+    0,
+    0,
+    0,
+    255
+   ]
+  },
+  {
+   "part": "Lipstick",
+   "engine": "LipColor",
+   "degree": 70,
+   "tex": null,
+   "opacity": null,
+   "roi": null,
+   "mix": null
+  }
+ ],
+ "MU00000020": [
+  {
+   "part": "Blusher",
+   "engine": "BlusherImageMakeup",
+   "degree": 70,
+   "tex": [
+    "sh.png"
+   ],
+   "opacity": 65,
+   "roi": [
+    95,
+    40,
+    901,
+    1081
+   ],
+   "mix": [
+    0,
+    0,
+    0,
+    255
+   ]
+  },
+  {
+   "part": "Bronzer",
+   "engine": "BlusherImageMakeup",
+   "degree": 70,
+   "tex": [
+    "xr.png"
+   ],
+   "opacity": 10,
+   "roi": [
+    95,
+    40,
+    901,
+    1081
+   ],
+   "mix": [
+    0,
+    0,
+    0,
+    255
+   ]
+  },
+  {
+   "part": "Bronzer",
+   "engine": "BlusherImageMakeup",
+   "degree": 70,
+   "tex": [
+    "gg.png"
+   ],
+   "opacity": 100,
+   "roi": [
+    95,
+    40,
+    901,
+    1081
+   ],
+   "mix": [
+    0,
+    0,
+    0,
+    255
+   ]
+  },
+  {
+   "part": "Bronzer",
+   "engine": "BlusherImageMakeup",
+   "degree": 70,
+   "tex": [
+    "xr_SideFace.png"
+   ],
+   "opacity": 40,
+   "roi": [
+    95,
+    40,
+    901,
+    1081
+   ],
+   "mix": [
+    0,
+    0,
+    0,
+    255
+   ]
+  },
+  {
+   "part": "Eyebrow",
+   "engine": "SymEyeBrowImageMakeup",
+   "degree": 70,
+   "tex": [
+    "mmz.png"
+   ],
+   "opacity": 30,
+   "roi": [
+    210,
+    410,
+    290,
+    110
+   ],
+   "mix": [
+    33,
+    17,
+    14,
+    255
+   ]
+  },
+  {
+   "part": "Eyeliner",
+   "engine": "SymEyeImageMakeup",
+   "degree": 70,
+   "tex": [
+    "yxy.png"
+   ],
+   "opacity": 80,
+   "roi": [
+    500,
+    400,
+    300,
+    300
+   ],
+   "mix": [
+    0,
+    0,
+    0,
+    255
+   ]
+  },
+  {
+   "part": "Eyeliner",
+   "engine": "SymEyeImageMakeup",
+   "degree": 70,
+   "tex": [
+    "yxz.png"
+   ],
+   "opacity": 80,
+   "roi": [
+    200,
+    400,
+    300,
+    300
+   ],
+   "mix": [
+    0,
+    0,
+    0,
+    255
+   ]
+  },
+  {
+   "part": "Eyemakeup",
+   "engine": "SymEyeImageMakeup",
+   "degree": 70,
+   "tex": [
+    "yyz.png"
+   ],
+   "opacity": 90,
+   "roi": [
+    200,
+    400,
+    300,
+    300
+   ],
+   "mix": [
+    0,
+    0,
+    0,
+    255
+   ]
+  },
+  {
+   "part": "Eyemakeup",
+   "engine": "SymEyeImageMakeup",
+   "degree": 70,
+   "tex": [
+    "yyy.png"
+   ],
+   "opacity": 90,
+   "roi": [
+    500,
+    400,
+    300,
+    300
+   ],
+   "mix": [
+    0,
+    0,
+    0,
+    255
+   ]
+  },
+  {
+   "part": "Eyemakeup",
+   "engine": "SymEyeImageMakeup",
+   "degree": 70,
+   "tex": [
+    "yyggz.png"
+   ],
+   "opacity": 50,
+   "roi": [
+    200,
+    400,
+    300,
+    300
+   ],
+   "mix": [
+    0,
+    0,
+    0,
+    255
+   ]
+  },
+  {
+   "part": "Eyemakeup",
+   "engine": "SymEyeImageMakeup",
+   "degree": 70,
+   "tex": [
+    "yyggy.png"
+   ],
+   "opacity": 50,
+   "roi": [
+    500,
+    400,
+    300,
+    300
+   ],
+   "mix": [
+    0,
+    0,
+    0,
+    255
+   ]
+  },
+  {
+   "part": "Lipstick",
+   "engine": "LipStickImageMakeup",
+   "degree": 70,
+   "tex": [
+    "zc.png"
+   ],
+   "opacity": 70,
+   "roi": [
+    350,
+    800,
+    300,
+    120
+   ],
+   "mix": [
+    0,
+    0,
+    0,
+    255
+   ]
+  },
+  {
+   "part": "Lipstick",
+   "engine": "LipColor",
+   "degree": 70,
+   "tex": null,
+   "opacity": null,
+   "roi": null,
+   "mix": null
+  }
+ ],
+ "MU00000021": [
+  {
+   "part": "Blusher",
+   "engine": "BlusherImageMakeup",
+   "degree": 70,
+   "tex": [
+    "sh.png"
+   ],
+   "opacity": 60,
+   "roi": [
+    95,
+    40,
+    901,
+    1081
+   ],
+   "mix": [
+    0,
+    0,
+    0,
+    255
+   ]
+  },
+  {
+   "part": "Bronzer",
+   "engine": "BlusherImageMakeup",
+   "degree": 70,
+   "tex": [
+    "gg.png"
+   ],
+   "opacity": 36,
+   "roi": [
+    95,
+    40,
+    901,
+    1081
+   ],
+   "mix": [
+    0,
+    0,
+    0,
+    255
+   ]
+  },
+  {
+   "part": "Bronzer",
+   "engine": "BlusherImageMakeup",
+   "degree": 70,
+   "tex": [
+    "xr.png"
+   ],
+   "opacity": 48,
+   "roi": [
+    95,
+    40,
+    901,
+    1081
+   ],
+   "mix": [
+    0,
+    0,
+    0,
+    255
+   ]
+  },
+  {
+   "part": "Bronzer",
+   "engine": "BlusherImageMakeup",
+   "degree": 70,
+   "tex": [
+    "xr_SideFace.png"
+   ],
+   "opacity": 49,
+   "roi": [
+    95,
+    40,
+    901,
+    1081
+   ],
+   "mix": [
+    0,
+    0,
+    0,
+    255
+   ]
+  },
+  {
+   "part": "Eyebrow",
+   "engine": "NormalEyeBrowImageMakeup",
+   "degree": 70,
+   "tex": [
+    "mmz.png"
+   ],
+   "opacity": 50,
+   "roi": [
+    210,
+    410,
+    260,
+    110
+   ],
+   "mix": [
+    0,
+    0,
+    0,
+    255
+   ]
+  },
+  {
+   "part": "Eyebrow",
+   "engine": "NormalEyeBrowImageMakeup",
+   "degree": 70,
+   "tex": [
+    "mmy.png"
+   ],
+   "opacity": 50,
+   "roi": [
+    540,
+    410,
+    260,
+    110
+   ],
+   "mix": [
+    0,
+    0,
+    0,
+    255
+   ]
+  },
+  {
+   "part": "Eyelash",
+   "engine": "SymEyeLashColorMakeup",
+   "degree": 70,
+   "tex": [
+    "lt.png"
+   ],
+   "opacity": 70,
+   "roi": [
+    200,
+    400,
+    300,
+    300
+   ],
+   "mix": [
+    15,
+    4,
+    0,
+    255
+   ]
+  },
+  {
+   "part": "Eyelash",
+   "engine": "SymEyeLashColorMakeup",
+   "degree": 70,
+   "tex": [
+    "rt.png"
+   ],
+   "opacity": 70,
+   "roi": [
+    500,
+    400,
+    300,
+    300
+   ],
+   "mix": [
+    15,
+    4,
+    0,
+    255
+   ]
+  },
+  {
+   "part": "Eyelash",
+   "engine": "SymEyeLashColorMakeup",
+   "degree": 70,
+   "tex": [
+    "lb.png"
+   ],
+   "opacity": 55,
+   "roi": [
+    200,
+    400,
+    300,
+    300
+   ],
+   "mix": [
+    27,
+    8,
+    1,
+    255
+   ]
+  },
+  {
+   "part": "Eyelash",
+   "engine": "SymEyeLashColorMakeup",
+   "degree": 70,
+   "tex": [
+    "rb.png"
+   ],
+   "opacity": 55,
+   "roi": [
+    500,
+    400,
+    300,
+    300
+   ],
+   "mix": [
+    27,
+    8,
+    1,
+    255
+   ]
+  },
+  {
+   "part": "Eyeliner",
+   "engine": "SymEyeImageMakeup",
+   "degree": 70,
+   "tex": [
+    "yxsz.png"
+   ],
+   "opacity": 75,
+   "roi": [
+    200,
+    400,
+    300,
+    300
+   ],
+   "mix": [
+    0,
+    0,
+    0,
+    255
+   ]
+  },
+  {
+   "part": "Eyeliner",
+   "engine": "SymEyeImageMakeup",
+   "degree": 70,
+   "tex": [
+    "yxsy.png"
+   ],
+   "opacity": 75,
+   "roi": [
+    500,
+    400,
+    300,
+    300
+   ],
+   "mix": [
+    0,
+    0,
+    0,
+    255
+   ]
+  },
+  {
+   "part": "Eyeliner",
+   "engine": "SymEyeImageMakeup",
+   "degree": 70,
+   "tex": [
+    "yxxz.png"
+   ],
+   "opacity": 70,
+   "roi": [
+    200,
+    400,
+    300,
+    300
+   ],
+   "mix": [
+    0,
+    0,
+    0,
+    255
+   ]
+  },
+  {
+   "part": "Eyeliner",
+   "engine": "SymEyeImageMakeup",
+   "degree": 70,
+   "tex": [
+    "yxxy.png"
+   ],
+   "opacity": 70,
+   "roi": [
+    500,
+    400,
+    300,
+    300
+   ],
+   "mix": [
+    0,
+    0,
+    0,
+    255
+   ]
+  },
+  {
+   "part": "Eyemakeup",
+   "engine": "SymEyeImageMakeup",
+   "degree": 70,
+   "tex": [
+    "yyz.png"
+   ],
+   "opacity": 60,
+   "roi": [
+    200,
+    400,
+    300,
+    300
+   ],
+   "mix": [
+    0,
+    0,
+    0,
+    255
+   ]
+  },
+  {
+   "part": "Eyemakeup",
+   "engine": "SymEyeImageMakeup",
+   "degree": 70,
+   "tex": [
+    "yyy.png"
+   ],
+   "opacity": 60,
+   "roi": [
+    500,
+    400,
+    300,
+    300
+   ],
+   "mix": [
+    0,
+    0,
+    0,
+    255
+   ]
+  },
+  {
+   "part": "Eyemakeup",
+   "engine": "SymEyeImageMakeup",
+   "degree": 70,
+   "tex": [
+    "lpz.png"
+   ],
+   "opacity": 100,
+   "roi": [
+    200,
+    400,
+    300,
+    300
+   ],
+   "mix": [
+    0,
+    0,
+    0,
+    255
+   ]
+  },
+  {
+   "part": "Eyemakeup",
+   "engine": "SymEyeImageMakeup",
+   "degree": 70,
+   "tex": [
+    "lpy.png"
+   ],
+   "opacity": 100,
+   "roi": [
+    500,
+    400,
+    300,
+    300
+   ],
+   "mix": [
+    0,
+    0,
+    0,
+    255
+   ]
+  },
+  {
+   "part": "Eyepupil",
+   "engine": "EyePupilMakeup",
+   "degree": 70,
+   "tex": [
+    "mt.png",
+    "eye_mask_left.png"
+   ],
+   "opacity": 40,
+   "roi": [
+    200,
+    400,
+    300,
+    300
+   ],
+   "mix": [
+    0,
+    0,
+    0,
+    255
+   ]
+  },
+  {
+   "part": "Eyepupil",
+   "engine": "EyePupilMakeup",
+   "degree": 70,
+   "tex": [
+    "mt.png",
+    "eye_mask_right.png"
+   ],
+   "opacity": 40,
+   "roi": [
+    500,
+    400,
+    300,
+    300
+   ],
+   "mix": [
+    0,
+    0,
+    0,
+    255
+   ]
+  },
+  {
+   "part": "Lipstick",
+   "engine": "LipStickImageMakeup",
+   "degree": 70,
+   "tex": [
+    "zc.png"
+   ],
+   "opacity": 68,
+   "roi": [
+    350,
+    800,
+    300,
+    120
+   ],
+   "mix": [
+    0,
+    0,
+    0,
+    255
+   ]
+  },
+  {
+   "part": "Lipstick",
+   "engine": "LipColor",
+   "degree": 70,
+   "tex": null,
+   "opacity": null,
+   "roi": null,
+   "mix": null
+  }
+ ],
+ "MU00000022": [
+  {
+   "part": "Bronzer",
+   "engine": "BlusherImageMakeup",
+   "degree": 70,
+   "tex": [
+    "xr.png"
+   ],
+   "opacity": 45,
+   "roi": [
+    95,
+    40,
+    901,
+    1081
+   ],
+   "mix": [
+    0,
+    0,
+    0,
+    255
+   ]
+  },
+  {
+   "part": "Bronzer",
+   "engine": "BlusherImageMakeup",
+   "degree": 70,
+   "tex": [
+    "gg.png"
+   ],
+   "opacity": 45,
+   "roi": [
+    95,
+    40,
+    901,
+    1081
+   ],
+   "mix": [
+    0,
+    0,
+    0,
+    255
+   ]
+  },
+  {
+   "part": "Bronzer",
+   "engine": "BlusherImageMakeup",
+   "degree": 70,
+   "tex": [
+    "xr_SideFace.png"
+   ],
+   "opacity": 55,
+   "roi": [
+    95,
+    40,
+    901,
+    1081
+   ],
+   "mix": [
+    0,
+    0,
+    0,
+    255
+   ]
+  },
+  {
+   "part": "Eyebrow",
+   "engine": "SymEyeBrowImageMakeup",
+   "degree": 70,
+   "tex": [
+    "mmz.png"
+   ],
+   "opacity": 50,
+   "roi": [
+    210,
+    410,
+    290,
+    110
+   ],
+   "mix": [
+    33,
+    17,
+    14,
+    255
+   ]
+  },
+  {
+   "part": "Eyelash",
+   "engine": "SymEyeLashImageMakeup",
+   "degree": 70,
+   "tex": [
+    "jmz.png"
+   ],
+   "opacity": 100,
+   "roi": [
+    200,
+    400,
+    300,
+    300
+   ],
+   "mix": [
+    0,
+    0,
+    0,
+    255
+   ]
+  },
+  {
+   "part": "Eyelash",
+   "engine": "SymEyeLashImageMakeup",
+   "degree": 70,
+   "tex": [
+    "jmy.png"
+   ],
+   "opacity": 100,
+   "roi": [
+    500,
+    400,
+    300,
+    300
+   ],
+   "mix": [
+    0,
+    0,
+    0,
+    255
+   ]
+  },
+  {
+   "part": "Eyeliner",
+   "engine": "SymEyeImageMakeup",
+   "degree": 70,
+   "tex": [
+    "yxz.png"
+   ],
+   "opacity": 60,
+   "roi": [
+    200,
+    400,
+    300,
+    300
+   ],
+   "mix": [
+    0,
+    0,
+    0,
+    255
+   ]
+  },
+  {
+   "part": "Eyeliner",
+   "engine": "SymEyeImageMakeup",
+   "degree": 70,
+   "tex": [
+    "yxy.png"
+   ],
+   "opacity": 60,
+   "roi": [
+    500,
+    400,
+    300,
+    300
+   ],
+   "mix": [
+    0,
+    0,
+    0,
+    255
+   ]
+  },
+  {
+   "part": "Eyemakeup",
+   "engine": "SymEyeImageMakeup",
+   "degree": 70,
+   "tex": [
+    "yyz.png"
+   ],
+   "opacity": 18,
+   "roi": [
+    200,
+    400,
+    300,
+    300
+   ],
+   "mix": [
+    0,
+    0,
+    0,
+    255
+   ]
+  },
+  {
+   "part": "Eyemakeup",
+   "engine": "SymEyeImageMakeup",
+   "degree": 70,
+   "tex": [
+    "yyy.png"
+   ],
+   "opacity": 18,
+   "roi": [
+    500,
+    400,
+    300,
+    300
+   ],
+   "mix": [
+    0,
+    0,
+    0,
+    255
+   ]
+  },
+  {
+   "part": "Lipstick",
+   "engine": "LipColor",
+   "degree": 70,
+   "tex": null,
+   "opacity": null,
+   "roi": null,
+   "mix": null
+  },
+  {
+   "part": "Lipstick",
+   "engine": "LipStickImageMakeup",
+   "degree": 70,
+   "tex": [
+    "zc.png"
+   ],
+   "opacity": 41,
+   "roi": [
+    350,
+    800,
+    300,
+    120
+   ],
+   "mix": [
+    0,
+    0,
+    0,
+    255
+   ]
+  }
+ ],
+ "MU00000023": [
+  {
+   "part": "Blusher",
+   "engine": "BlusherImageMakeup",
+   "degree": 70,
+   "tex": [
+    "sh.png"
+   ],
+   "opacity": 45,
+   "roi": [
+    95,
+    40,
+    901,
+    1081
+   ],
+   "mix": [
+    0,
+    0,
+    0,
+    255
+   ]
+  },
+  {
+   "part": "Bronzer",
+   "engine": "BlusherImageMakeup",
+   "degree": 70,
+   "tex": [
+    "gg.png"
+   ],
+   "opacity": 38,
+   "roi": [
+    95,
+    40,
+    901,
+    1081
+   ],
+   "mix": [
+    0,
+    0,
+    0,
+    255
+   ]
+  },
+  {
+   "part": "Bronzer",
+   "engine": "BlusherImageMakeup",
+   "degree": 70,
+   "tex": [
+    "xr.png"
+   ],
+   "opacity": 33,
+   "roi": [
+    95,
+    40,
+    901,
+    1081
+   ],
+   "mix": [
+    0,
+    0,
+    0,
+    255
+   ]
+  },
+  {
+   "part": "Bronzer",
+   "engine": "BlusherImageMakeup",
+   "degree": 70,
+   "tex": [
+    "xr_SideFace.png"
+   ],
+   "opacity": 49,
+   "roi": [
+    95,
+    40,
+    901,
+    1081
+   ],
+   "mix": [
+    0,
+    0,
+    0,
+    255
+   ]
+  },
+  {
+   "part": "Eyebrow",
+   "engine": "NormalEyeBrowImageMakeup",
+   "degree": 70,
+   "tex": [
+    "mmz.png"
+   ],
+   "opacity": 50,
+   "roi": [
+    210,
+    410,
+    260,
+    110
+   ],
+   "mix": [
+    0,
+    0,
+    0,
+    255
+   ]
+  },
+  {
+   "part": "Eyebrow",
+   "engine": "NormalEyeBrowImageMakeup",
+   "degree": 70,
+   "tex": [
+    "mmy.png"
+   ],
+   "opacity": 50,
+   "roi": [
+    540,
+    410,
+    260,
+    110
+   ],
+   "mix": [
+    0,
+    0,
+    0,
+    255
+   ]
+  },
+  {
+   "part": "Eyelash",
+   "engine": "SymEyeLashColorMakeup",
+   "degree": 70,
+   "tex": [
+    "lt.png"
+   ],
+   "opacity": 60,
+   "roi": [
+    200,
+    400,
+    300,
+    300
+   ],
+   "mix": [
+    15,
+    4,
+    0,
+    255
+   ]
+  },
+  {
+   "part": "Eyelash",
+   "engine": "SymEyeLashColorMakeup",
+   "degree": 70,
+   "tex": [
+    "rt.png"
+   ],
+   "opacity": 60,
+   "roi": [
+    500,
+    400,
+    300,
+    300
+   ],
+   "mix": [
+    15,
+    4,
+    0,
+    255
+   ]
+  },
+  {
+   "part": "Eyelash",
+   "engine": "SymEyeLashColorMakeup",
+   "degree": 70,
+   "tex": [
+    "lb.png"
+   ],
+   "opacity": 35,
+   "roi": [
+    200,
+    400,
+    300,
+    300
+   ],
+   "mix": [
+    119,
+    76,
+    47,
+    255
+   ]
+  },
+  {
+   "part": "Eyelash",
+   "engine": "SymEyeLashColorMakeup",
+   "degree": 70,
+   "tex": [
+    "rb.png"
+   ],
+   "opacity": 35,
+   "roi": [
+    500,
+    400,
+    300,
+    300
+   ],
+   "mix": [
+    119,
+    76,
+    47,
+    255
+   ]
+  },
+  {
+   "part": "Eyeliner",
+   "engine": "SymEyeImageMakeup",
+   "degree": 70,
+   "tex": [
+    "yxz.png"
+   ],
+   "opacity": 60,
+   "roi": [
+    200,
+    400,
+    300,
+    300
+   ],
+   "mix": [
+    0,
+    0,
+    0,
+    255
+   ]
+  },
+  {
+   "part": "Eyeliner",
+   "engine": "SymEyeImageMakeup",
+   "degree": 70,
+   "tex": [
+    "yxy.png"
+   ],
+   "opacity": 60,
+   "roi": [
+    500,
+    400,
+    300,
+    300
+   ],
+   "mix": [
+    0,
+    0,
+    0,
+    255
+   ]
+  },
+  {
+   "part": "Eyemakeup",
+   "engine": "SymEyeImageMakeup",
+   "degree": 70,
+   "tex": [
+    "yyz.png"
+   ],
+   "opacity": 48,
+   "roi": [
+    200,
+    400,
+    300,
+    300
+   ],
+   "mix": [
+    0,
+    0,
+    0,
+    255
+   ]
+  },
+  {
+   "part": "Eyemakeup",
+   "engine": "SymEyeImageMakeup",
+   "degree": 70,
+   "tex": [
+    "yyy.png"
+   ],
+   "opacity": 48,
+   "roi": [
+    500,
+    400,
+    300,
+    300
+   ],
+   "mix": [
+    0,
+    0,
+    0,
+    255
+   ]
+  },
+  {
+   "part": "Lipstick",
+   "engine": "LipStickImageMakeup",
+   "degree": 70,
+   "tex": [
+    "zc.png"
+   ],
+   "opacity": 30,
+   "roi": [
+    350,
+    800,
+    300,
+    120
+   ],
+   "mix": [
+    0,
+    0,
+    0,
+    255
+   ]
+  }
+ ],
+ "MU00000024": [
+  {
+   "part": "Blusher",
+   "engine": "BlusherImageMakeup",
+   "degree": 70,
+   "tex": [
+    "blush.png"
+   ],
+   "opacity": 35,
+   "roi": [
+    95,
+    40,
+    901,
+    1081
+   ],
+   "mix": [
+    0,
+    0,
+    0,
+    255
+   ]
+  },
+  {
+   "part": "Bronzer",
+   "engine": "BlusherImageMakeup",
+   "degree": 70,
+   "tex": [
+    "gg.png"
+   ],
+   "opacity": 55,
+   "roi": [
+    95,
+    40,
+    901,
+    1081
+   ],
+   "mix": [
+    0,
+    0,
+    0,
+    255
+   ]
+  },
+  {
+   "part": "Bronzer",
+   "engine": "BlusherImageMakeup",
+   "degree": 70,
+   "tex": [
+    "xr.png"
+   ],
+   "opacity": 25,
+   "roi": [
+    95,
+    40,
+    901,
+    1081
+   ],
+   "mix": [
+    0,
+    0,
+    0,
+    255
+   ]
+  },
+  {
+   "part": "Bronzer",
+   "engine": "BlusherImageMakeup",
+   "degree": 70,
+   "tex": [
+    "xr_SideFace.png"
+   ],
+   "opacity": 49,
+   "roi": [
+    95,
+    40,
+    901,
+    1081
+   ],
+   "mix": [
+    0,
+    0,
+    0,
+    255
+   ]
+  },
+  {
+   "part": "Eyebrow",
+   "engine": "NormalEyeBrowImageMakeup",
+   "degree": 70,
+   "tex": [
+    "mmz.png"
+   ],
+   "opacity": 46,
+   "roi": [
+    210,
+    410,
+    260,
+    110
+   ],
+   "mix": [
+    0,
+    0,
+    0,
+    255
+   ]
+  },
+  {
+   "part": "Eyebrow",
+   "engine": "NormalEyeBrowImageMakeup",
+   "degree": 70,
+   "tex": [
+    "mmy.png"
+   ],
+   "opacity": 40,
+   "roi": [
+    540,
+    410,
+    260,
+    110
+   ],
+   "mix": [
+    0,
+    0,
+    0,
+    255
+   ]
+  },
+  {
+   "part": "Eyelash",
+   "engine": "SymEyeLashColorMakeup",
+   "degree": 70,
+   "tex": [
+    "lt.png"
+   ],
+   "opacity": 75,
+   "roi": [
+    200,
+    400,
+    300,
+    300
+   ],
+   "mix": [
+    15,
+    4,
+    0,
+    255
+   ]
+  },
+  {
+   "part": "Eyelash",
+   "engine": "SymEyeLashColorMakeup",
+   "degree": 70,
+   "tex": [
+    "rt.png"
+   ],
+   "opacity": 75,
+   "roi": [
+    500,
+    400,
+    300,
+    300
+   ],
+   "mix": [
+    15,
+    4,
+    0,
+    255
+   ]
+  },
+  {
+   "part": "Eyelash",
+   "engine": "SymEyeLashColorMakeup",
+   "degree": 70,
+   "tex": [
+    "lb.png"
+   ],
+   "opacity": 53,
+   "roi": [
+    200,
+    400,
+    300,
+    300
+   ],
+   "mix": [
+    27,
+    8,
+    1,
+    255
+   ]
+  },
+  {
+   "part": "Eyelash",
+   "engine": "SymEyeLashColorMakeup",
+   "degree": 70,
+   "tex": [
+    "rb.png"
+   ],
+   "opacity": 53,
+   "roi": [
+    500,
+    400,
+    300,
+    300
+   ],
+   "mix": [
+    27,
+    8,
+    1,
+    255
+   ]
+  },
+  {
+   "part": "Eyeliner",
+   "engine": "SymEyeImageMakeup",
+   "degree": 70,
+   "tex": [
+    "yxsz.png"
+   ],
+   "opacity": 50,
+   "roi": [
+    200,
+    400,
+    300,
+    300
+   ],
+   "mix": [
+    0,
+    0,
+    0,
+    255
+   ]
+  },
+  {
+   "part": "Eyeliner",
+   "engine": "SymEyeImageMakeup",
+   "degree": 70,
+   "tex": [
+    "yxsy.png"
+   ],
+   "opacity": 50,
+   "roi": [
+    500,
+    400,
+    300,
+    300
+   ],
+   "mix": [
+    0,
+    0,
+    0,
+    255
+   ]
+  },
+  {
+   "part": "Eyeliner",
+   "engine": "SymEyeImageMakeup",
+   "degree": 70,
+   "tex": [
+    "yxxz.png"
+   ],
+   "opacity": 49,
+   "roi": [
+    200,
+    400,
+    300,
+    300
+   ],
+   "mix": [
+    0,
+    0,
+    0,
+    255
+   ]
+  },
+  {
+   "part": "Eyeliner",
+   "engine": "SymEyeImageMakeup",
+   "degree": 70,
+   "tex": [
+    "yxxy.png"
+   ],
+   "opacity": 49,
+   "roi": [
+    500,
+    400,
+    300,
+    300
+   ],
+   "mix": [
+    0,
+    0,
+    0,
+    255
+   ]
+  },
+  {
+   "part": "Eyemakeup",
+   "engine": "SymEyeImageMakeup",
+   "degree": 70,
+   "tex": [
+    "yyz.png"
+   ],
+   "opacity": 55,
+   "roi": [
+    200,
+    400,
+    300,
+    300
+   ],
+   "mix": [
+    0,
+    0,
+    0,
+    255
+   ]
+  },
+  {
+   "part": "Eyemakeup",
+   "engine": "SymEyeImageMakeup",
+   "degree": 70,
+   "tex": [
+    "yyy.png"
+   ],
+   "opacity": 55,
+   "roi": [
+    500,
+    400,
+    300,
+    300
+   ],
+   "mix": [
+    0,
+    0,
+    0,
+    255
+   ]
+  },
+  {
+   "part": "Eyepupil",
+   "engine": "EyePupilMakeup",
+   "degree": 70,
+   "tex": [
+    "mt.png",
+    "eye_mask_left.png"
+   ],
+   "opacity": 40,
+   "roi": [
+    200,
+    400,
+    300,
+    300
+   ],
+   "mix": [
+    0,
+    0,
+    0,
+    255
+   ]
+  },
+  {
+   "part": "Eyepupil",
+   "engine": "EyePupilMakeup",
+   "degree": 70,
+   "tex": [
+    "mt.png",
+    "eye_mask_right.png"
+   ],
+   "opacity": 40,
+   "roi": [
+    500,
+    400,
+    300,
+    300
+   ],
+   "mix": [
+    0,
+    0,
+    0,
+    255
+   ]
+  },
+  {
+   "part": "Lipstick",
+   "engine": "LipStickImageMakeup",
+   "degree": 70,
+   "tex": [
+    "zc.png"
+   ],
+   "opacity": 71,
+   "roi": [
+    350,
+    800,
+    300,
+    120
+   ],
+   "mix": [
+    0,
+    0,
+    0,
+    255
+   ]
+  },
+  {
+   "part": "Lipstick",
+   "engine": "LipColor",
+   "degree": 70,
+   "tex": null,
+   "opacity": null,
+   "roi": null,
+   "mix": null
+  }
+ ]
+}

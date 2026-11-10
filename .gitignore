@@ -1,0 +1,16 @@
+__pycache__/
+*.pyc
+.venv/
+node_modules/
+server/work/
+server/web/
+fnpack/app/
+fnpack/fnpkg_output/
+*.fpk
+*.tar.gz
+demo/out/
+.hermes-tmp/
+.DS_Store
+webapp/node_modules/
+tests/raw/
+engine/perception/models/*.onnx

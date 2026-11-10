@@ -1,0 +1,1 @@
+{"name": "makeup_only", "nodes": [{"op": "face_detect"}, {"op": "makeup_transfer", "params": {"degree": 0.7}}]}

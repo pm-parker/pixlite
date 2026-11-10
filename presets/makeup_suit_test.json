@@ -1,0 +1,6 @@
+{
+  "nodes": [
+    {"op": "face_detect", "params": {}},
+    {"op": "makeup_suit", "params": {"suit_id": "MU00000001", "degree": 0.7}}
+  ]
+}

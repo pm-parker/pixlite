@@ -1,0 +1,31 @@
+[
+  {
+    "stepTitle": "GPU 加速",
+    "items": [
+      {
+        "type": "radio",
+        "field": "wizard_gpu",
+        "label": "推理设备 (自动探测失败时可手动指定)",
+        "initValue": "auto",
+        "options": [
+          {
+            "label": "自动 (检测到 AMD MIGraphX 引擎自动启用)",
+            "value": "auto"
+          },
+          {
+            "label": "AMD MIGraphX (780M 等 AMD 显卡)",
+            "value": "migraphx"
+          },
+          {
+            "label": "NVIDIA CUDA",
+            "value": "cuda"
+          },
+          {
+            "label": "仅 CPU",
+            "value": "cpu"
+          }
+        ]
+      }
+    ]
+  }
+]

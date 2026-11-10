@@ -1,0 +1,80 @@
+#!/bin/bash
+# 安装后: 准备运行环境 (venv 多级降级 + pip --target 兜底)
+LOG_FILE="${TRIM_PKGVAR}/info.log"
+VENV="${TRIM_PKGVAR}/venv"
+PYLIBS="${TRIM_PKGVAR}/pylibs"
+APP_DIR="${TRIM_APPDEST}"
+export PATH="/var/apps/python312/target/bin:${PATH}"
+export HOME="${TRIM_PKGVAR}/home"
+export TMPDIR="${TRIM_PKGVAR}/tmp"
+export PIP_DISABLE_PIP_VERSION_CHECK=1
+log_msg() { echo "$(date '+%Y-%m-%d %H:%M:%S') - $1" >> "${LOG_FILE}"; }
+fail() { echo "$1" > "${TRIM_TEMP_LOGFILE:-/dev/stdout}"; log_msg "FAILED: $1"; exit 1; }
+
+mkdir -p "${TRIM_PKGVAR}" "${HOME}" "${TMPDIR}" "${TRIM_PKGVAR}/work" 2>/dev/null
+[ -d "${HOME}" ] || { HOME="${TMPDIR}"; export HOME; }
+echo "${wizard_gpu:-auto}" > "${TRIM_PKGVAR}/gpu_ep.conf" 2>/dev/null || true
+
+log_msg "python3 = $(command -v python3); version: $(python3 -V 2>&1)"
+log_msg "HOME=${HOME} TMPDIR=${TMPDIR} VENV=${VENV}"
+
+REQ="${APP_DIR}/requirements.txt"
+[ -f "${REQ}" ] || fail "requirements.txt 缺失: ${REQ}"
+
+# ---- 依赖安装: 三级降级 ----
+PYBIN=""
+if [ -x "${VENV}/bin/python" ]; then PYBIN="${VENV}/bin/python"; fi
+
+# 策略 A: 已有 venv
+if [ -n "${PYBIN}" ]; then
+    log_msg "strategy A: use existing venv"
+    "${VENV}/bin/pip" install -r "${REQ}" >> "${LOG_FILE}" 2>&1 && { echo "${PYBIN}" > "${TRIM_PKGVAR}/python_path"; log_msg "deps installed via venv"; exit 0; }
+    log_msg "strategy A failed, trying B"
+fi
+
+# 策略 B: 新建 venv (带 ensurepip 修复)
+if [ -z "${PYBIN}" ]; then
+    log_msg "strategy B: python3 -m venv ${VENV}"
+    rm -rf "${VENV}"
+    python3 -m venv "${VENV}" >> "${LOG_FILE}" 2>&1
+    if [ -x "${VENV}/bin/python" ]; then
+        log_msg "venv created, bootstrapping pip"
+        "${VENV}/bin/python" -m ensurepip --upgrade >> "${LOG_FILE}" 2>&1
+        "${VENV}/bin/pip" install --upgrade pip >> "${LOG_FILE}" 2>&1
+        if "${VENV}/bin/pip" install -r "${REQ}" >> "${LOG_FILE}" 2>&1; then
+            echo "${VENV}/bin/python" > "${TRIM_PKGVAR}/python_path"
+            log_msg "deps installed via new venv"
+            exit 0
+        fi
+        log_msg "strategy B pip failed"
+    else
+        log_msg "strategy B venv creation FAILED:"
+        tail -30 "${LOG_FILE}" >> "${LOG_FILE}" 2>/dev/null
+    fi
+fi
+
+# 策略 C: 不用 venv, pip --target 装到 pylibs
+log_msg "strategy C: pip install --target ${PYLIBS}"
+rm -rf "${PYLIBS}"; mkdir -p "${PYLIBS}"
+if python3 -m pip install --target "${PYLIBS}" -r "${REQ}" >> "${LOG_FILE}" 2>&1; then
+    echo "${PYLIBS}" > "${TRIM_PKGVAR}/pylibs_path"
+    log_msg "deps installed via --target"
+    exit 0
+fi
+if python3 -m pip install --user --target "${PYLIBS}" -r "${REQ}" >> "${LOG_FILE}" 2>&1; then
+    echo "${PYLIBS}" > "${TRIM_PKGVAR}/pylibs_path"
+    log_msg "deps installed via --user --target"
+    exit 0
+fi
+
+log_msg "ALL strategies failed, log tail:"
+tail -40 "${LOG_FILE}" > "${TRIM_TEMP_LOGFILE:-/dev/stdout}" 2>/dev/null
+# 导出诊断到 AI 共享文件夹
+DDST=""
+if [ -n "${TRIM_DATA_SHARE_PATHS}" ]; then DDST="$(echo "${TRIM_DATA_SHARE_PATHS}" | cut -d: -f1)/pixlite-logs"; fi
+[ -z "${DDST}" ] && [ -d /var/apps/fnnas.pixlite/share/logs ] && DDST="/var/apps/fnnas.pixlite/share/logs/pixlite-logs"
+if [ -n "${DDST}" ]; then
+    mkdir -p "${DDST}" 2>/dev/null
+    { echo "=== PixLite 安装失败诊断 $(date) ==="; tail -60 "${LOG_FILE}" 2>/dev/null; } > "${DDST}/pixlite-install-fail_$(date '+%Y%m%d_%H%M%S').txt" 2>&1
+fi
+fail "依赖安装失败, 详见 ${LOG_FILE}"

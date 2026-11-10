@@ -1,0 +1,187 @@
+#!/bin/bash
+# PixLite - 启动/停止/状态
+LOG_FILE="${TRIM_PKGVAR}/info.log"
+PID_FILE="${TRIM_PKGVAR}/app.pid"
+APP_DIR="${TRIM_APPDEST}"
+VENV="${TRIM_PKGVAR}/venv"
+PORT="${TRIM_SERVICE_PORT:-8300}"
+
+export PATH="/var/apps/python312/target/bin:${PATH}"
+export PIXLITE_WORK_DIR="${TRIM_PKGVAR}/work"
+export PIXLITE_LUT_DIR="${TRIM_APPDEST}/lut/Filters"
+export PIXLITE_TOKEN="${TRIM_SERVICE_TOKEN:-}"
+if [ -f "${TRIM_PKGVAR}/gpu_ep.conf" ]; then
+    export PIXLITE_EP="$(tr -d '\n' < "${TRIM_PKGVAR}/gpu_ep.conf")"
+else
+    export PIXLITE_EP="auto"
+fi
+export HOME="${TRIM_PKGVAR}/home"
+export TMPDIR="${TRIM_PKGVAR}/tmp"
+
+log_msg() { echo "$(date '+%Y-%m-%d %H:%M:%S') - $1" >> "${LOG_FILE}"; }
+check_process() { kill -0 "$1" 2>/dev/null; }
+
+status() {
+    if [ -f "${PID_FILE}" ]; then
+        pid=$(head -n 1 "${PID_FILE}" | tr -d '[:space:]')
+        if check_process "$pid"; then return 0; else rm -f "${PID_FILE}"; fi
+    fi
+    # 兜底: pid 丢了但进程还在
+    pgrep -f "uvicorn server.api.main:app" > /dev/null 2>&1
+}
+
+# 失败时把诊断包导出到共享文件夹 AI/pixlite-logs/ (用户可直接从文件管理看到并转发)
+export_diag() {
+    local REASON="$1"
+    local DST=""
+    # 优先用系统声明的共享目录 (TRIM_DATA_SHARE_PATHS)
+    if [ -n "${TRIM_DATA_SHARE_PATHS}" ]; then
+        DST="$(echo "${TRIM_DATA_SHARE_PATHS}" | cut -d: -f1)/pixlite-logs"
+    fi
+    if [ -z "${DST}" ] || [ ! -d "$(dirname "${DST}")" ]; then
+        for d in /var/apps/fnnas.pixlite/share/logs /var/apps/fnnas.pixlite/share/AI; do
+            [ -d "$d" ] && { DST="$d/pixlite-logs"; break; }
+        done
+    fi
+    if [ -z "${DST}" ]; then
+        log_msg "export_diag: no share dir found, skip"
+        return 0
+    fi
+    mkdir -p "${DST}" 2>/dev/null
+    local TS="$(date '+%Y%m%d_%H%M%S')"
+    local OUT="${DST}/pixlite-diag_${TS}.txt"
+    {
+        echo "=== PixLite 诊断 $(date '+%Y-%m-%d %H:%M:%S') ==="
+        echo "原因: ${REASON}"
+        echo "APP_DIR=${TRIM_APPDEST} PKGVAR=${TRIM_PKGVAR} PORT=${PORT} EP=${PIXLITE_EP}"
+        echo "SHARE_PATHS=${TRIM_DATA_SHARE_PATHS}"
+        echo "python3: $(command -v python3) $(python3 -V 2>&1)"
+        echo "python_path: $(cat ${TRIM_PKGVAR}/python_path 2>/dev/null)"
+        echo "pylibs_path: $(cat ${TRIM_PKGVAR}/pylibs_path 2>/dev/null)"
+        echo ""
+        echo "--- info.log 尾部 100 行 ---"
+        tail -100 "${LOG_FILE}" 2>/dev/null
+        echo ""
+        echo "--- var 目录 ---"
+        ls -la "${TRIM_PKGVAR}" 2>/dev/null
+    } > "${OUT}" 2>&1
+    log_msg "diag exported: ${OUT}"
+    ls -t "${DST}"/pixlite-diag_*.txt 2>/dev/null | tail -n +11 | xargs -r rm -f
+}
+
+
+# AMD GPU 自适应: 检测到飞牛 AMD MIGraphX 引擎时自动装 AMD 官方 onnxruntime wheel (无需用户 SSH)
+ensure_amd_ep() {
+    local MGX=""
+    for d in /opt/rocm/bin/migraphx-driver /usr/bin/migraphx-driver; do
+        [ -x "$d" ] && { MGX="$d"; break; }
+    done
+    [ -z "${MGX}" ] && return 0   # 没装 AMD 引擎, 走默认
+    # venv 里已有 MIGraphX EP? (装过就跳过)
+    if [ -x "${VENV}/bin/python" ] && "${VENV}/bin/python" -c "import onnxruntime" 2>/dev/null \
+       && "${VENV}/bin/python" -c "import onnxruntime; assert 'MIGraphXExecutionProvider' in onnxruntime.get_available_providers()" 2>/dev/null; then
+        return 0
+    fi
+    log_msg "AMD MIGraphX engine detected, installing AMD onnxruntime wheel ..."
+    mkdir -p "${TRIM_PKGVAR}/home" "${TRIM_PKGVAR}/tmp" 2>/dev/null
+    if [ ! -x "${VENV}/bin/python" ]; then
+        python3 -m venv "${VENV}" >> "${LOG_FILE}" 2>&1 || return 0
+        "${VENV}/bin/python" -m ensurepip --upgrade >> "${LOG_FILE}" 2>&1
+    fi
+    # AMD 官方 wheel (ROCm 6.4.1 + MIGraphX EP, cp312)
+    local WHEEL="https://repo.radeon.com/rocm/manylinux/rocm-rel-6.4.1/onnxruntime_rocm-1.21.0-cp312-cp312-manylinux_2_28_x86_64.whl"
+    "${VENV}/bin/pip" install --index-url https://pypi.org/simple "${WHEEL}" >> "${LOG_FILE}" 2>&1 \
+      || "${VENV}/bin/pip" install "${WHEEL}" >> "${LOG_FILE}" 2>&1
+    if "${VENV}/bin/python" -c "import onnxruntime; assert 'MIGraphXExecutionProvider' in onnxruntime.get_available_providers()" 2>/dev/null; then
+        echo "migraphx" > "${TRIM_PKGVAR}/gpu_ep.conf"
+        log_msg "AMD wheel installed, EP=migraphx"
+    else
+        log_msg "AMD wheel install/verify failed, keep CPU"
+    fi
+    return 0
+}
+
+resolve_python() {
+    PY=""
+    local plp=""
+    if [ -f "${TRIM_PKGVAR}/python_path" ]; then
+        plp="$(tr -d ' \n\r' < "${TRIM_PKGVAR}/python_path")"
+        [ -x "$plp" ] && PY="$plp"
+    fi
+    if [ -z "${PY}" ] && [ -x "${VENV}/bin/python" ]; then PY="${VENV}/bin/python"; fi
+    if [ -z "${PY}" ]; then
+        log_msg "lazy venv creation ..."
+        mkdir -p "${TRIM_PKGVAR}/home" "${TRIM_PKGVAR}/tmp" 2>/dev/null
+        python3 -m venv "${VENV}" >> "${LOG_FILE}" 2>&1 || true
+        if [ -x "${VENV}/bin/python" ]; then
+            "${VENV}/bin/python" -m ensurepip --upgrade >> "${LOG_FILE}" 2>&1
+            "${VENV}/bin/pip" install -r "${APP_DIR}/requirements.txt" >> "${LOG_FILE}" 2>&1
+            if [ -x "${VENV}/bin/python" ]; then PY="${VENV}/bin/python"; fi
+        fi
+    fi
+    if [ -z "${PY}" ] && [ -f "${TRIM_PKGVAR}/pylibs_path" ]; then
+        plp="$(tr -d ' \n\r' < "${TRIM_PKGVAR}/pylibs_path")"
+        export PYTHONPATH="${plp}:${PYTHONPATH}"
+        PY="python3"
+    fi
+    if [ -z "${PY}" ]; then return 1; fi
+    return 0
+}
+
+start_process() {
+    if status; then return 0; fi
+    mkdir -p "${PIXLITE_WORK_DIR}" "${TRIM_PKGVAR}/tmp" "${TRIM_PKGVAR}/home" 2>/dev/null
+    ensure_amd_ep
+    if ! resolve_python; then
+        log_msg "FAILED: no usable python environment"
+        echo "Python 环境未就绪, 详见 ${LOG_FILE}" > "${TRIM_TEMP_LOGFILE:-/dev/stdout}" 2>/dev/null
+        export_diag "python 环境未就绪"
+        return 1
+    fi
+    log_msg "start: PY=${PY} PYTHONPATH=${PYTHONPATH} PORT=${PORT} EP=${PIXLITE_EP}"
+    cd "${APP_DIR}" || { log_msg "FAILED: cd ${APP_DIR}"; return 1; }
+    nohup "${PY}" -m uvicorn server.api.main:app --host 0.0.0.0 --port "${PORT}" \
+        >> "${LOG_FILE}" 2>&1 &
+    printf "%s" "$!" > "${PID_FILE}"
+    # 等真起来 (最多 25s): 模型 import 慢, 死了立刻报
+    c=0
+    while [ $c -lt 25 ]; do
+        sleep 1
+        c=$((c+1))
+        pid=$(cat "${PID_FILE}" 2>/dev/null)
+        if ! check_process "$pid"; then
+            log_msg "FAILED: process died after ${c}s"
+            export_diag "uvicorn 进程 ${c}s 后退出"
+            return 1
+        fi
+        if command -v curl >/dev/null 2>&1; then
+            if curl -s -o /dev/null -m 2 "http://127.0.0.1:${PORT}/"; then
+                log_msg "started pid=${pid} after ${c}s (http ok)"
+                return 0
+            fi
+        fi
+    done
+    log_msg "started (no http confirm) pid=$(cat ${PID_FILE} 2>/dev/null)"
+    return 0
+}
+
+stop_process() {
+    if [ -f "${PID_FILE}" ]; then
+        pid=$(head -n 1 "${PID_FILE}" | tr -d '[:space:]')
+        if check_process "$pid"; then
+            kill -TERM "$pid" >> "${LOG_FILE}" 2>&1
+            c=0; while check_process "$pid" && [ $c -lt 10 ]; do sleep 1; c=$((c+1)); done
+            check_process "$pid" && { kill -KILL "$pid"; sleep 1; }
+        fi
+        rm -f "${PID_FILE}"
+    fi
+    log_msg "stopped"
+    return 0
+}
+
+case $1 in
+    start) start_process ;;
+    stop)  stop_process ;;
+    status) if status; then exit 0; else exit 3; fi ;;
+    *) exit 1 ;;
+esac

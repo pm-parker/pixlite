@@ -1,0 +1,67 @@
+{
+    "Effects": [
+        {
+            "EffectName": "Filter",
+            "DegreeRange": [
+                0,
+                100
+            ],
+            "StartRenderTime": [
+                0
+            ],
+            "Path": "filter.png",
+            "MaskType": 0,
+            "RenderDuration": [
+                -1
+            ],
+            "FilterType": 71,
+            "ParamFlag": 300,
+            "DefaultDegree": 70,
+            "bPreCompute": false,
+            "EnableDegreeRemap": false
+        },
+        {
+            "EffectName": "RealGrain",
+            "Color": 0.0,
+            "Resolution": 0.17739999294281,
+            "MaleDegreeFactor": 1.0,
+            "Midtones": 0.388099998235703,
+            "GrainDensity": 0.137899994850159,
+            "DensityScaleRatio": 5.0,
+            "ParamFlag": -1,
+            "DensityDegree": 1.0,
+            "Shadows": 0.176499992609024,
+            "Luminance": 0.290300011634827,
+            "GrainStyle": 0,
+            "NoiseMinSize": 4500,
+            "Hightlights": 0.180299997329712,
+            "NoiseRangeUV": 1.0,
+            "SmallFaceDegreeFactor": 1.0,
+            "DefaultDegree": 100,
+            "bPreCompute": false,
+            "EnableDegreeRemap": false,
+            "RenderDuration": [
+                -1
+            ],
+            "FemaleDegreeFactor": 1.0,
+            "StartRenderTime": [
+                0
+            ],
+            "NoiseMaxSize": 8000,
+            "ChildDegreeFactor": 1.0,
+            "NoiseRangeY": 1.0,
+            "Model1": [
+                1.0,
+                1.0,
+                2.0,
+                2.0
+            ],
+            "OlderDegreeFactor": 1.0,
+            "DegreeRange": [
+                0,
+                100
+            ]
+        }
+    ]
+}
+ÆµÄ³˜è…¬ÆŒ‰§

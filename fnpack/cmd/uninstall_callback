@@ -1,0 +1,4 @@
+#!/bin/bash
+# 卸载后: 清理工作目录 (保留 venv? 删掉释放空间)
+rm -rf "${TRIM_PKGVAR}/work" 2>/dev/null
+exit 0

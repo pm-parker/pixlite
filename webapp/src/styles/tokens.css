@@ -1,0 +1,113 @@
+/* ============================================================
+   PixLite Design Tokens — 对齐像素蛋糕 10.0.5 实测设计值
+   来源: pixcake-reverse/ui_tour 截图取色 + UIA frame 真值 (2026-11-03)
+   · 纯中性黑背景（无蓝紫偏色）: #0A0A0A < #121212 < #191919 < #323232
+   · 强调蓝 #3187FF（选中/滑杆填充）, 高亮 #9DC5FF
+   · 控件基准: 滑杆行 63px / 图标 36px / 按钮触控 63px / 右侧导航条 108px
+   ============================================================ */
+:root {
+  /* ---- 中性深色分层（像素蛋糕实测） ---- */
+  --px-bg-0: #0a0a0a;         /* 最深：导航条/底部工具条 */
+  --px-bg-1: #0e0e0e;         /* 页面底 */
+  --px-bg-2: #121212;         /* 面板 */
+  --px-bg-3: #191919;         /* 卡片/hover */
+  --px-bg-4: #232323;         /* 激活/输入框 */
+
+  /* ---- 线条 ---- */
+  --px-line: #262626;
+  --px-line-2: #323232;
+
+  /* ---- 文字 ---- */
+  --px-text: #ffffff;
+  --px-text-2: #c8c8c8;
+  --px-text-3: #8a8a8a;
+
+  /* ---- 强调色（像素蛋糕蓝） ---- */
+  --px-accent: #3187ff;
+  --px-accent-2: #9dc5ff;
+  --px-accent-weak: rgba(49, 135, 255, 0.14);
+  --px-accent-glow: rgba(49, 135, 255, 0.30);
+
+  /* ---- 阴影（QA 2026-11-04: 7 处引用但从未定义导致全失效） ---- */
+  --px-shadow-1: 0 1px 4px rgba(0, 0, 0, 0.40);
+  --px-shadow-2: 0 4px 16px rgba(0, 0, 0, 0.50);
+  --px-shadow-3: 0 8px 32px rgba(0, 0, 0, 0.60);
+  --px-shadow-focus: 0 0 0 3px rgba(49, 135, 255, 0.28);
+
+  /* ---- 语义色 ---- */
+  --px-star: #f2c97d;
+  --px-keep: #8fdcA0;
+  --px-danger: #e5605c;
+
+  /* ---- 几何（像素蛋糕控件基准） ---- */
+  --px-radius: 6px;
+  --px-radius-sm: 4px;
+  --px-radius-lg: 8px;
+  --px-space: 4px;
+  --px-row-h: 63px;           /* 滑杆/列表行高 */
+  --px-icon-sm: 36px;         /* 行内图标 */
+  --px-btn-touch: 63px;       /* 按钮触控高度 */
+  --px-nav-w: 108px;          /* 右侧模块导航条宽 */
+
+  /* ---- 动效 ---- */
+  --px-ease: cubic-bezier(.25, .8, .35, 1);
+  --px-dur: 160ms;
+
+  /* ---- 字体（中文界面专业搭配） ---- */
+  --px-font: 'MiSans', 'HarmonyOS Sans SC', 'PingFang SC',
+             'Microsoft YaHei UI', 'Microsoft YaHei', -apple-system,
+             'Segoe UI', sans-serif;
+}
+
+/* ============ Element Plus 暗色变量系统化覆写 ============ */
+html.dark {
+  /* 背景族 → 三层结构 */
+  --el-bg-color: var(--px-bg-2);
+  --el-bg-color-page: var(--px-bg-1);
+  --el-bg-color-overlay: var(--px-bg-3);
+
+  /* 边框族 */
+  --el-border-color: var(--px-line-2);
+  --el-border-color-light: var(--px-line);
+  --el-border-color-lighter: var(--px-line);
+  --el-border-color-extra-light: var(--px-line);
+
+  /* 填充族 */
+  --el-fill-color: var(--px-bg-3);
+  --el-fill-color-light: var(--px-bg-3);
+  --el-fill-color-lighter: var(--px-bg-2);
+  --el-fill-color-blank: var(--px-bg-2);
+  --el-fill-color-dark: var(--px-bg-4);
+
+  /* 主色阶（向深色背景混合生成） */
+  --el-color-primary: var(--px-accent);
+  --el-color-primary-light-3: #6da4ff;
+  --el-color-primary-light-5: #276ccc;
+  --el-color-primary-light-7: #1d529c;
+  --el-color-primary-light-8: #163d72;
+  --el-color-primary-light-9: #10294a;
+  --el-color-primary-dark-2: #276ccc;
+
+  /* 文字 */
+  --el-text-color-primary: var(--px-text);
+  --el-text-color-regular: var(--px-text-2);
+  --el-text-color-secondary: var(--px-text-3);
+  --el-text-color-placeholder: #565c69;
+  --el-text-color-disabled: #4a4f5a;
+
+  /* 几何/密度：专业工具偏紧凑 */
+  --el-border-radius-base: 6px;
+  --el-border-radius-small: 4px;
+  --el-component-size-small: 26px;
+  --el-slider-height: 4px;
+
+  /* 弹层阴影 */
+  --el-box-shadow: var(--px-shadow-3);
+  --el-box-shadow-light: var(--px-shadow-2);
+
+  /* 禁用态 */
+  --el-disabled-bg-color: var(--px-bg-2);
+  --el-disabled-border-color: var(--px-line);
+  --el-disabled-text-color: #4a4f5a;
+  --el-disabled-fill-color: var(--px-bg-3);
+}

@@ -1,0 +1,166 @@
+/* ============================================================
+   PixLite 全局基础样式（视觉层重构 · tokens 见 tokens.css）
+   ============================================================ */
+
+html, body, #app { height: 100%; margin: 0; }
+body {
+  background: var(--px-bg-1);
+  color: var(--px-text);
+  font-family: var(--px-font);
+  font-size: 13px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+  overflow: hidden;
+}
+
+* { box-sizing: border-box; }
+
+/* 数值统一等宽（滑杆读数/EXIF/计数） */
+.pm-num, .exp-q, .fs-count, .cv-zoom, .side-count, .proj-count, .batch-stat-text,
+.el-input-number, .wiz-count {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: 'tnum';
+}
+
+/* 选中态：品牌色、不刺眼 */
+::selection { background: var(--px-accent-glow); }
+
+/* ---- 滚动条（更细、hover 才显色） ---- */
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: #262626; border-radius: 4px; border: 2px solid transparent; background-clip: padding-box; }
+::-webkit-scrollbar-thumb:hover { background: #323232; background-clip: padding-box; }
+
+/* ---- 通用按钮 ---- */
+.px-btn-accent {
+  background: linear-gradient(180deg, #4a97ff, #276ccc) !important;
+  border: 1px solid rgba(255,255,255,.08) !important;
+  box-shadow: 0 1px 6px var(--px-accent-glow), inset 0 1px 0 rgba(255,255,255,.12) !important;
+  color: #fff !important;
+  font-weight: 500;
+  letter-spacing: .5px;
+  transition: filter var(--px-dur) var(--px-ease), box-shadow var(--px-dur) var(--px-ease), transform var(--px-dur) var(--px-ease);
+}
+.px-btn-accent:hover { filter: brightness(1.1); box-shadow: 0 2px 12px var(--px-accent-glow), inset 0 1px 0 rgba(255,255,255,.12) !important; }
+.px-btn-accent:active { transform: translateY(1px) scale(.99); }
+
+/* ---- 图标按钮（顶栏/工具条通用） ---- */
+.px-icon-btn {
+  width: var(--px-icon-sm); height: var(--px-icon-sm);  /* 36px, 对齐像素蛋糕行内图标基准 */
+  display: inline-flex; align-items: center; justify-content: center;
+  border-radius: var(--px-radius-sm); color: var(--px-text-2); cursor: pointer;
+  position: relative;
+  transition: background var(--px-dur) var(--px-ease), color var(--px-dur) var(--px-ease);
+}
+.px-icon-btn:hover { background: var(--px-bg-3); color: var(--px-text); }
+.px-icon-btn:active { background: var(--px-bg-4); }
+.px-icon-btn.active { background: var(--px-accent-weak); color: var(--px-accent-2); }
+.px-icon-btn.active::after {
+  content: ''; position: absolute; bottom: 2px; left: 50%; transform: translateX(-50%);
+  width: 14px; height: 2px; border-radius: 1px; background: var(--px-accent);
+}
+
+/* ---- 淡入 ---- */
+@keyframes pxfade { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+.px-fade { animation: pxfade .28s var(--px-ease); }
+
+/* ---- 虚线描边素材区 ---- */
+.px-dashed {
+  border: 1px dashed var(--px-line-2);
+  border-radius: var(--px-radius);
+  transition: border-color var(--px-dur) var(--px-ease), background var(--px-dur) var(--px-ease);
+}
+
+/* ---- 标签小徽章 ---- */
+.px-tag {
+  display: inline-flex; align-items: center; gap: 4px;
+  font-size: 11px; color: var(--px-text-2);
+  background: var(--px-bg-3); border-radius: 4px; padding: 1px 6px;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ============ Element Plus 细节精修 ============ */
+
+/* 滑杆：细跑道 + 渐变填充 + 精致手柄 */
+.el-slider { --el-slider-height: 3px; }
+.el-slider__runway { background: var(--px-bg-4); border-radius: 2px; height: 3px; }
+.el-slider__bar { height: 3px; border-radius: 2px;
+  background: linear-gradient(90deg, #276ccc, var(--px-accent)); }
+.el-slider__button {
+  width: 11px; height: 11px;
+  border: 2px solid var(--px-accent);
+  background: #f4f5f8;
+  box-shadow: 0 1px 4px rgba(0,0,0,.5);
+  transition: transform .12s var(--px-ease), box-shadow .12s var(--px-ease);
+}
+.el-slider__button:hover,
+.el-slider__button-wrapper.dragging .el-slider__button {
+  transform: scale(1.25);
+  box-shadow: 0 0 0 4px var(--px-accent-weak), 0 1px 5px rgba(0,0,0,.5);
+}
+.el-slider.is-disabled .el-slider__bar { background: #333846; }
+.el-slider.is-disabled .el-slider__button { border-color: #323232; background: #24272f; }
+
+/* 输入框/数值框 */
+.el-input__wrapper, .el-textarea__inner, .el-select__wrapper {
+  background: var(--px-bg-1);
+  box-shadow: 0 0 0 1px var(--px-line-2) inset;
+  transition: box-shadow var(--px-dur) var(--px-ease);
+}
+.el-input__wrapper:hover, .el-select__wrapper:hover { box-shadow: 0 0 0 1px #3a4050 inset; }
+.el-input__wrapper.is-focus, .el-select__wrapper.is-focused {
+  box-shadow: 0 0 0 1px var(--px-accent) inset, var(--px-shadow-focus) !important;
+}
+.el-input-number.is-controls-right .el-input-number__decrease,
+.el-input-number.is-controls-right .el-input-number__increase {
+  background: transparent; color: var(--px-text-3); border-color: transparent;
+}
+.el-input-number.is-controls-right .el-input-number__decrease:hover,
+.el-input-number.is-controls-right .el-input-number__increase:hover { color: var(--px-text); }
+
+/* 按钮 */
+.el-button { font-weight: 500; transition: all var(--px-dur) var(--px-ease); }
+.el-button--small { padding: 5px 11px; }
+
+/* 对话框 */
+.el-dialog { border: 1px solid var(--px-line-2); border-radius: var(--px-radius-lg);
+  box-shadow: var(--px-shadow-3); }
+.el-dialog__header { margin: 0; padding: 14px 18px; border-bottom: 1px solid var(--px-line); }
+.el-dialog__title { font-size: 14px; font-weight: 600; color: var(--px-text); }
+
+/* 下拉弹层 */
+.el-dropdown__popper, .el-select__popper {
+  border: 1px solid var(--px-line-2) !important;
+  box-shadow: var(--px-shadow-2) !important;
+}
+.el-dropdown-menu__item:not(.is-disabled):hover,
+.el-select-dropdown__item.is-hovering { background: var(--px-bg-3); }
+
+/* tabs */
+.el-tabs__nav-wrap::after { display: none; }
+.el-tabs__item { transition: color var(--px-dur); }
+
+/* radio button 组（图库筛选） */
+.el-radio-group .el-radio-button__inner {
+  background: var(--px-bg-2); border-color: var(--px-line-2);
+  box-shadow: -1px 0 0 var(--px-line-2); color: var(--px-text-2);
+}
+.el-radio-group .el-radio-button__original-radio:checked + .el-radio-button__inner {
+  background: var(--px-accent-weak); border-color: var(--px-accent);
+  box-shadow: -1px 0 0 var(--px-accent) !important; color: var(--px-accent-2);
+  font-weight: 500;
+}
+
+/* switch / progress */
+.el-switch.is-checked .el-switch__core { border-color: var(--px-accent); background: var(--px-accent); }
+.el-progress-bar__outer { background: var(--px-bg-4); }
+
+/* empty */
+.el-empty__description p { color: var(--px-text-3); }
+
+/* tooltip */
+.el-popper.is-dark { background: #232323; border: 1px solid var(--px-line-2); font-size: 12px; }
+
+/* steps（向导） */
+.el-steps--simple { background: var(--px-bg-1); border-radius: var(--px-radius); padding: 10px 20px; }

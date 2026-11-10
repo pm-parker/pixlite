@@ -1,0 +1,12 @@
+#!/bin/bash
+# 安装前: 只做 python312 依赖检查 (venv 延后到 install_callback / main)
+LOG_FILE="${TRIM_PKGVAR}/info.log"
+log_msg() { echo "$(date '+%Y-%m-%d %H:%M:%S') - $1" >> "${LOG_FILE}"; }
+
+if [ ! -d /var/apps/python312/target/bin ]; then
+    echo "python312 运行时未安装, 请先在应用中心安装 python312 再装本应用" > "${TRIM_TEMP_LOGFILE:-/dev/stdout}"
+    exit 1
+fi
+log_msg "install_init: python312 ok"
+echo "${wizard_gpu:-auto}" > "${TRIM_PKGVAR}/gpu_ep.conf" 2>/dev/null || true
+exit 0

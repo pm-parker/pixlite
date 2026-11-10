@@ -1,0 +1,39 @@
+[
+  {
+    "stepTitle": "PixLite 修图 安装设置",
+    "items": [
+      {
+        "type": "radio",
+        "field": "wizard_gpu",
+        "label": "GPU 加速方式 (auto 会自动探测并安全回退 CPU)",
+        "initValue": "auto",
+        "options": [
+          {
+            "label": "自动探测 (推荐)",
+            "value": "auto"
+          },
+          {
+            "label": "NVIDIA CUDA",
+            "value": "cuda"
+          },
+          {
+            "label": "AMD ROCm",
+            "value": "rocm"
+          },
+          {
+            "label": "Intel OpenVINO",
+            "value": "openvino"
+          },
+          {
+            "label": "仅 CPU",
+            "value": "cpu"
+          }
+        ]
+      },
+      {
+        "type": "tips",
+        "helpText": "AMD 需先在应用中心安装 ROCm 驱动包; NVIDIA 需先装 Nvidia 驱动包。装完可在应用内看到当前推理设备。"
+      }
+    ]
+  }
+]

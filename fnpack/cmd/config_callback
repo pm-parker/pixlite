@@ -1,0 +1,6 @@
+#!/bin/bash
+# 配置变更: 保存 GPU 选择 + 重启服务
+echo "${wizard_gpu:-auto}" > "${TRIM_PKGVAR}/gpu_ep.conf" 2>/dev/null || true
+bash "${TRIM_APPDEST}/cmd/main" stop 2>/dev/null
+bash "${TRIM_APPDEST}/cmd/main" start 2>/dev/null
+exit 0
