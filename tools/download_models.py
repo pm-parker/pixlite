@@ -11,12 +11,17 @@ Usage:
     python tools/download_models.py --mirror   # use hf-mirror.com (CN network)
     python tools/download_models.py --verify   # only verify existing files, no download
 """
-import os, sys, urllib.request
+import os, sys, urllib.request, importlib.util
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(HERE)
-sys.path.insert(0, ROOT)
-from engine.perception.models_manifest import MODELS as FILES, check, sha256_of  # noqa: E402
+# 直接按文件加载清单, 不经过 engine.perception/__init__ (其依赖 numpy/cv2/onnxruntime):
+# 下载/校验模型只需标准库, 可在未装依赖的环境 (CI 打包机、NAS 首装) 运行
+_spec = importlib.util.spec_from_file_location(
+    'models_manifest', os.path.join(ROOT, 'engine', 'perception', 'models_manifest.py'))
+_mm = importlib.util.module_from_spec(_spec)
+_spec.loader.exec_module(_mm)
+FILES, check, sha256_of = _mm.MODELS, _mm.check, _mm.sha256_of
 
 MODELS = os.path.join(ROOT, 'engine', 'perception', 'models')
 
