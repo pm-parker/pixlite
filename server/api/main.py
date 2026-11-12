@@ -14,19 +14,39 @@ LUT_DIR = os.environ.get('PIXLITE_LUT_DIR') or os.path.abspath(os.path.join(
 
 app = FastAPI(title='PixLite')
 
-# ---- 轻量鉴权 (fpk/NAS 部署用): 设 PIXLITE_TOKEN 后, 非 127.0.0.1 请求必须带 X-API-Key ----
+# ---- 鉴权 (Issue #1): fail closed ----
+# - 设 PIXLITE_TOKEN 后, 非回环请求必须带正确的 X-API-Key。
+# - 未设 token 时, 非回环请求一律 401 (旧代码: 未设 token 直接放行, 而服务绑定 0.0.0.0)。
+#   确需在可信内网无 token 运行, 显式设置 PIXLITE_ALLOW_NO_TOKEN=1。
+# - 弱 token (< 16 字符) 启动时告警。
+# - 浏览器 <img>/<a> 无法带自定义头, 因此仅对少数 GET 资源路由
+#   (/api/image /api/result /api/filter-thumb) 接受 ?key=; 其余 API 只认 X-API-Key 头。
 API_TOKEN = os.environ.get('PIXLITE_TOKEN', '')
+ALLOW_NO_TOKEN = os.environ.get('PIXLITE_ALLOW_NO_TOKEN', '') == '1'
+_LOOPBACK = ('127.0.0.1', '::1', 'localhost')
+_PUBLIC_API = ('/api/health',)
+_QUERY_KEY_OK = ('/api/image', '/api/result/', '/api/filter-thumb/')
+
+def _auth_decision(client, path, header_key, query_key):
+    """返回 None 表示放行, 否则返回 (status, error)。纯函数, 便于测试。"""
+    if not path.startswith('/api/') or path in _PUBLIC_API or client in _LOOPBACK:
+        return None
+    if not API_TOKEN:
+        return None if ALLOW_NO_TOKEN else (401, 'server has no PIXLITE_TOKEN configured; remote access disabled')
+    provided = header_key or ''
+    if not provided and query_key and path.startswith(_QUERY_KEY_OK):
+        provided = query_key
+    if not hmac.compare_digest(provided.encode(), API_TOKEN.encode()):
+        return (401, 'unauthorized')
+    return None
 
 @app.middleware('http')
 async def _auth(request, call_next):
-    if API_TOKEN:
-        client = request.client.host if request.client else ''
-        is_local = client in ('127.0.0.1', '::1', 'localhost')
-        path = request.url.path
-        if not is_local and path.startswith('/api/') and path not in ('/api/health',):
-            provided = request.headers.get('X-API-Key') or request.query_params.get('key', '')
-            if not hmac.compare_digest(provided.encode(), API_TOKEN.encode()):
-                return JSONResponse({'error': 'unauthorized'}, status_code=401)
+    client = request.client.host if request.client else ''
+    d = _auth_decision(client, request.url.path, request.headers.get('X-API-Key'),
+                       request.query_params.get('key'))
+    if d:
+        return JSONResponse({'error': d[1]}, status_code=d[0])
     return await call_next(request)
 
 @app.get('/api/health')
@@ -147,6 +167,10 @@ def build_preset(base_name, overrides, routing=None, person=None):
                 n.setdefault('params', {})['person'] = person
     if not overrides:
         return preset
+    # Issue #1: 追色参考图是客户端给的服务器路径, 同样必须在允许根目录内
+    ref = overrides.get('color_match.ref_image') or overrides.get('rt.color_match.ref_image')
+    if ref and not _path_ok(ref):
+        raise ValueError('color_match.ref_image 路径不在允许访问的目录内')
     # group flat dotted keys by op prefix
     by_op = {}
     for key, val in overrides.items():
@@ -196,8 +220,51 @@ def build_preset(base_name, overrides, routing=None, person=None):
     return preset
 
 
+# ---- 资源上限 (Issue #2), 均可用环境变量调整 ----
+def _env_int(name, default):
+    try:
+        return int(os.environ.get(name, default))
+    except ValueError:
+        return default
+MAX_UPLOAD_BYTES = _env_int('PIXLITE_MAX_UPLOAD_MB', 200) * 1024 * 1024   # 单文件 (RAW 可达 100MB+)
+MAX_PIXELS = _env_int('PIXLITE_MAX_PIXELS', 100_000_000)                  # 解码后像素数 (约 1 亿)
+MAX_ACTIVE_JOBS = _env_int('PIXLITE_MAX_ACTIVE_JOBS', 4)                  # 同时运行的单图精修
+MAX_BATCH_FILES = _env_int('PIXLITE_MAX_BATCH_FILES', 5000)               # 单批图片数
+MAX_ACTIVE_BATCHES = _env_int('PIXLITE_MAX_ACTIVE_BATCHES', 1)            # 同时运行的批量任务
+MAX_BATCH_WORKERS = _env_int('PIXLITE_MAX_BATCH_WORKERS', 8)
+JOB_TTL_SEC = _env_int('PIXLITE_JOB_TTL_HOURS', 72) * 3600                # work 目录产物保留时长
+
+async def _save_upload(file, dst):
+    """流式落盘并限制字节数; 超限删除半成品并抛 ValueError。"""
+    n = 0
+    try:
+        with open(dst, 'wb') as fh:
+            while chunk := await file.read(1024 * 1024):
+                n += len(chunk)
+                if n > MAX_UPLOAD_BYTES:
+                    raise ValueError(f'文件超过上传上限 {MAX_UPLOAD_BYTES // (1024 * 1024)} MB (PIXLITE_MAX_UPLOAD_MB)')
+                fh.write(chunk)
+    except BaseException:
+        try: os.remove(dst)
+        except OSError: pass
+        raise
+    return n
+
+def _check_dims(path):
+    """解码前读取图像头尺寸, 超过 MAX_PIXELS 拒绝 (防解压炸弹)。"""
+    try:
+        from PIL import Image
+        Image.MAX_IMAGE_PIXELS = None
+        with Image.open(path) as im:
+            w, h = im.size
+    except Exception:
+        return   # 非 PIL 可识别 (RAW 等): 交给解码器 + OPENCV_IO_MAX_IMAGE_PIXELS
+    if w * h > MAX_PIXELS:
+        raise ValueError(f'图片尺寸 {w}x{h} 超过上限 {MAX_PIXELS} 像素 (PIXLITE_MAX_PIXELS)')
+
 def _load_image(path):
     """Read image; RAW formats (.dng/.cr2/.nef/.arw/.rw2/.pef/.raw) via rawpy postprocess."""
+    _check_dims(path)
     ext = os.path.splitext(path)[1].lower()
     if ext in ('.dng', '.cr2', '.nef', '.arw', '.rw2', '.pef', '.raw', '.orf', '.raf', '.srw'):
         import rawpy
@@ -220,6 +287,22 @@ def _gc_jobs(max_jobs=200, max_files=500):
     for p in srcs[:max(0, len(srcs) - max_files)]:
         try: os.remove(p)
         except OSError: pass
+    # Issue #2: TTL 清理 — 超过 JOB_TTL_SEC 的 work 产物 (_src/_out/ref/uploads) 与对应 job 条目
+    now = time.time()
+    running_out = {j.get('output') for j in list(jobs.values()) if j.get('status') == 'running'}
+    for p in glob.glob(os.path.join(WORK, '*')) + glob.glob(os.path.join(WORK, 'uploads', '*')):
+        try:
+            if os.path.isfile(p) and p not in running_out and \
+               os.path.basename(p) not in running_src and now - os.path.getmtime(p) > JOB_TTL_SEC:
+                os.remove(p)
+        except OSError:
+            pass
+    for k in [k for k, j in list(jobs.items()) if j.get('status') != 'running'
+              and now - j.get('ts', now) > JOB_TTL_SEC]:
+        jobs.pop(k, None)
+    for k in [k for k, j in list(batch_jobs.items()) if j.get('status') != 'running'
+              and now - j.get('ts', now) > JOB_TTL_SEC]:
+        batch_jobs.pop(k, None)
 
 def _run_job(job_id, path, preset, out_path, overrides=None, routing=None, person=None):
     jobs[job_id]['ts'] = time.time()
@@ -266,8 +349,12 @@ async def retouch(file: UploadFile = File(...), preset: str = Form('wedding_basi
         ext = '.jpg'
     src = os.path.join(WORK, job_id + '_src' + ext)
     out = os.path.join(WORK, job_id + '_out.jpg')
-    with open(src, 'wb') as fh:
-        fh.write(await file.read())
+    if sum(1 for j in list(jobs.values()) if j.get('status') == 'running') >= MAX_ACTIVE_JOBS:
+        return JSONResponse({'error': f'并发精修任务已达上限 {MAX_ACTIVE_JOBS}, 请稍后重试'}, 429)
+    try:
+        await _save_upload(file, src)
+    except ValueError as e:
+        return JSONResponse({'error': str(e)}, 413)
     jobs[job_id] = {'status': 'running', 'progress': 0, 'output': out, 'src': src, 'ts': time.time()}
     threading.Thread(target=_run_job, args=(job_id, src, preset, out, ov, rt, person or None), daemon=True).start()
     return {'job': job_id}
@@ -308,6 +395,7 @@ def presets():
 
 # ---- batch directory mode ----
 batch_jobs = {}
+_batch_lock = threading.Lock()
 
 def _run_batch(job_id, src_dir, dst_dir, preset, recursive, workers):
     bj = batch_jobs[job_id]['job']
@@ -316,7 +404,7 @@ def _run_batch(job_id, src_dir, dst_dir, preset, recursive, workers):
                                   progress=round(done / max(total, 1), 3))
     try:
         summary = bj.run(progress_cb=cb)
-        batch_jobs[job_id].update(status='done', **summary)
+        batch_jobs[job_id].update(status='cancelled' if bj.cancelled else 'done', **summary)
     except Exception as e:
         batch_jobs[job_id].update(status='error', error=str(e)[:300])
 
@@ -324,10 +412,17 @@ def _run_batch(job_id, src_dir, dst_dir, preset, recursive, workers):
 async def batch(src_dir: str = Form(...), dst_dir: str = Form(''),
                 preset: str = Form('wedding_basic'), recursive: bool = Form(True),
                 workers: int = Form(2)):
-    workers = max(1, min(workers, 8))  # 上限防资源耗尽
+    workers = max(1, min(workers, MAX_BATCH_WORKERS))  # 上限防资源耗尽
+    if not _path_ok(src_dir):
+        return JSONResponse({'error': 'forbidden'}, 403)
     if not os.path.isdir(src_dir):
         return JSONResponse({'error': 'src_dir not found'}, 400)
     dst = dst_dir or (src_dir.rstrip('\\/') + '_pixlite')
+    if not _path_ok(dst):
+        return JSONResponse({'error': 'dst_dir forbidden'}, 403)
+    with _batch_lock:
+        if sum(1 for j in batch_jobs.values() if j.get('status') == 'running') >= MAX_ACTIVE_BATCHES:
+            return JSONResponse({'error': f'已有 {MAX_ACTIVE_BATCHES} 个批量任务在运行, 请稍后再试'}, 429)
     try:
         pipe_holder = DictPipeline(_load_preset(preset))
     except ValueError as e:
@@ -336,12 +431,23 @@ async def batch(src_dir: str = Form(...), dst_dir: str = Form(''),
     if os.path.realpath(dst).startswith(os.path.realpath(src_dir).rstrip(os.sep) + os.sep):
         return JSONResponse({'error': 'dst_dir 不能位于 src_dir 内部'}, 400)
     files = collect_images(src_dir, recursive)
+    if len(files) > MAX_BATCH_FILES:
+        return JSONResponse({'error': f'图片数 {len(files)} 超过单批上限 {MAX_BATCH_FILES} (PIXLITE_MAX_BATCH_FILES)'}, 413)
     job_id = uuid.uuid4().hex[:12]
     bj = BatchJob(pipe_holder, src_dir, dst, recursive=recursive, workers=workers)
     batch_jobs[job_id] = {'status': 'running', 'done': 0, 'total': len(files),
-                          'progress': 0, 'dst': dst, 'job': bj}
+                          'progress': 0, 'dst': dst, 'job': bj, 'ts': time.time()}
     threading.Thread(target=_run_batch, args=(job_id, src_dir, dst, preset, recursive, workers), daemon=True).start()
     return {'job': job_id, 'total': len(files), 'dst': dst}
+
+@app.post('/api/batch/{job_id}/cancel')
+def batch_cancel(job_id: str):
+    """Issue #2: 取消批量任务 (已在处理的图片完成后停止, 未开始的跳过)。"""
+    j = batch_jobs.get(job_id)
+    if not j:
+        return JSONResponse({'status': 'unknown'}, 404)
+    j['job'].cancel()
+    return {'status': 'cancelling'}
 
 @app.get('/api/batch/{job_id}')
 def batch_status(job_id: str):
@@ -350,12 +456,41 @@ def batch_status(job_id: str):
         return JSONResponse({'status': 'unknown'}, 404)
     return {k: v for k, v in j.items() if k != 'job'}
 
+# ---- 文件系统访问白名单 (Issue #1) ----
+# 旧实现只拒绝两个 Windows 目录, POSIX 上任何路径 (/etc, /root, ...) 都可被读取/浏览/批处理。
+# 现在所有接受客户端路径的接口 (browse/image/exif/batch/color_match.ref_image) 只允许
+# realpath (解析符号链接后) 位于允许根目录之内。
+# PIXLITE_ALLOWED_ROOTS: os.pathsep 分隔; 未设置时默认 = 工作目录 + 常见 NAS 数据卷。
+def _default_roots():
+    if os.name == 'nt':
+        return [f'{c}:\\' for c in 'CDEFGH' if os.path.isdir(f'{c}:\\')]
+    roots = sorted(glob.glob('/vol[0-9]*')) + ['/var/apps/fnnas.pixlite/share', '/share', '/mnt',
+                                               '/media', '/home']
+    return [r for r in roots if os.path.isdir(r)]
+
+def _allowed_roots():
+    env = os.environ.get('PIXLITE_ALLOWED_ROOTS')
+    roots = [r for r in env.split(os.pathsep) if r] if env else _default_roots()
+    roots = roots + [WORK]
+    return [os.path.realpath(r) for r in roots]
+
 DENY_PREFIX = ('c:/windows', 'c:/users/administrator/appdata')
 
 def _path_ok(p):
-    """内部工具轻量防护: 拒系统敏感目录。"""
-    rp = os.path.realpath(p).lower().replace(os.sep, '/')
-    return not any(rp.startswith(d) for d in DENY_PREFIX)
+    """realpath 必须落在允许根目录内 (防 ../ 与符号链接逃逸), 且不在系统敏感目录。"""
+    if not p or '\x00' in p:
+        return False
+    try:
+        rp = os.path.realpath(p)
+    except (OSError, ValueError):
+        return False
+    low = rp.lower().replace(os.sep, '/')
+    if any(low.startswith(d) for d in DENY_PREFIX):
+        return False
+    for r in _allowed_roots():
+        if rp == r or rp.startswith(r.rstrip(os.sep) + os.sep):
+            return True
+    return False
 
 @app.get('/api/image')
 def serve_image(path: str):
@@ -383,32 +518,19 @@ async def upload_file(file: UploadFile = File(...), subdir: str = 'uploads'):
     os.makedirs(d, exist_ok=True)
     name = f"{_t.strftime('%Y%m%d_%H%M%S')}_{_u.uuid4().hex[:6]}{ext}"
     dst = os.path.join(d, name)
-    with open(dst, 'wb') as f:
-        while chunk := await file.read(1024 * 1024):
-            f.write(chunk)
+    try:
+        await _save_upload(file, dst)
+    except ValueError as e:
+        return JSONResponse({'error': str(e)}, 413)
     return {'path': dst, 'name': fn, 'size': os.path.getsize(dst)}
 
 @app.get('/api/browse')
 def browse(path: str = ''):
-    """List dirs/images for NAS path picker."""
+    """List dirs/images for NAS path picker. 根列表 = 允许访问的根目录 (Issue #1: 不再列出 '/')。"""
     if not path:
-        dirs = []
-        if os.name == 'nt':
-            dirs = [f'{c}:\\' for c in 'CDEFGH' if os.path.isdir(f'{c}:\\')]
-        else:
-            # fnOS/NAS (Linux): 根目录 + 常见挂载点 + 应用共享目录
-            dirs = ['/']
-            import glob as _g
-            for d in sorted(_g.glob('/vol*')):
-                if os.path.isdir(d): dirs.append(d)
-            # 应用可访问的共享目录 (声明过的 data-share)
-            if os.path.isdir('/var/apps/fnnas.pixlite/share'):
-                for d in sorted(os.listdir('/var/apps/fnnas.pixlite/share')):
-                    dirs.append(f'/var/apps/fnnas.pixlite/share/{d}')
-            # 用户主目录常见位置
-            for d in ['/home', '/share', '/mnt']:
-                if os.path.isdir(d): dirs.append(d)
-        return {'dirs': dirs}
+        return {'dirs': [r for r in _allowed_roots() if os.path.isdir(r)]}
+    if not _path_ok(path):
+        return JSONResponse({'error': 'permission'}, 403)
     if not os.path.isdir(path):
         return JSONResponse({'error': 'not a dir'}, 400)
     try:
@@ -533,8 +655,10 @@ async def upload_ref(file: UploadFile = File(...)):
     if ext not in ('.jpg', '.jpeg', '.png', '.webp', '.bmp'):
         return JSONResponse({'error': 'unsupported'}, 400)
     p = os.path.join(WORK, job_id + ext)
-    with open(p, 'wb') as fh:
-        fh.write(await file.read())
+    try:
+        await _save_upload(file, p)
+    except ValueError as e:
+        return JSONResponse({'error': str(e)}, 413)
     return {'path': p, 'url': '/api/image?path=' + p.replace('\\', '/')}
 
 # server/web 是 webapp 的构建产物 (已 .gitignore): 旧代码无条件 mount, 目录不存在时

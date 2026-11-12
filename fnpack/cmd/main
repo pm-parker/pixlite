@@ -9,7 +9,19 @@ PORT="${TRIM_SERVICE_PORT:-8300}"
 export PATH="/var/apps/python312/target/bin:${PATH}"
 export PIXLITE_WORK_DIR="${TRIM_PKGVAR}/work"
 export PIXLITE_LUT_DIR="${TRIM_APPDEST}/lut/Filters"
-export PIXLITE_TOKEN="${TRIM_SERVICE_TOKEN:-}"
+# Issue #1: 服务绑定 0.0.0.0, 未配置 token 时服务端会拒绝所有非本机请求 (fail closed)。
+# 系统未下发 TRIM_SERVICE_TOKEN 时, 首次启动生成随机强 token 持久化到 var/api_token (0600),
+# 用户在 应用首页 → 连接密钥 中填写该值即可远程访问。
+TOKEN_FILE="${TRIM_PKGVAR}/api_token"
+if [ -n "${TRIM_SERVICE_TOKEN:-}" ]; then
+    export PIXLITE_TOKEN="${TRIM_SERVICE_TOKEN}"
+else
+    if [ ! -s "${TOKEN_FILE}" ]; then
+        ( umask 077; head -c 32 /dev/urandom | od -An -tx1 | tr -d ' \n' > "${TOKEN_FILE}" )
+    fi
+    export PIXLITE_TOKEN="$(tr -d ' \n\r' < "${TOKEN_FILE}")"
+fi
+export PIXLITE_ALLOWED_ROOTS="${PIXLITE_ALLOWED_ROOTS:-$(ls -d /vol[0-9]* 2>/dev/null | tr '\n' ':')/var/apps/fnnas.pixlite/share:${TRIM_PKGVAR}/work}"
 if [ -f "${TRIM_PKGVAR}/gpu_ep.conf" ]; then
     export PIXLITE_EP="$(tr -d '\n' < "${TRIM_PKGVAR}/gpu_ep.conf")"
 else

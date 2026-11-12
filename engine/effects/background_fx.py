@@ -38,8 +38,12 @@ def blur_bg(bgr, strength=0.7):
     return (bgr.astype(np.float32) * alpha + blurred.astype(np.float32) * (1 - alpha)).astype(np.uint8)
 
 def replace_bg_color(bgr, color=(18, 18, 18), degree=1.0):
-    """背景纯色替换 (默认影棚深灰)."""
+    """背景纯色替换 (默认影棚深灰). degree 0=原背景, 1=纯色背景, 中间线性过渡。
+    Issue #8: 旧代码 mix = color * degree, degree=0 时背景变纯黑而非保持原图。"""
+    d = float(np.clip(degree, 0, 1))
+    if d <= 0:
+        return bgr                      # 不加载/不跑 MODNet
     alpha = get_alpha(bgr)[..., None]
-    bg = np.zeros_like(bgr); bg[:] = color
-    mix = bg.astype(np.float32) * degree
-    return (bgr.astype(np.float32) * alpha + mix * (1 - alpha)).astype(np.uint8)
+    src = bgr.astype(np.float32)
+    bg = src * (1 - d) + np.asarray(color, np.float32)[None, None, :3] * d
+    return np.clip(src * alpha + bg * (1 - alpha) + 0.5, 0, 255).astype(np.uint8)

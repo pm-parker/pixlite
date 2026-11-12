@@ -1,9 +1,9 @@
-onnxruntime
-mediapipe
-opencv-python-headless
-numpy
-rawpy
-pillow
-fastapi
-uvicorn
-python-multipart
+# Pinned (Issue #10). Verified installable as binary wheels on Linux x86_64 / macOS arm64, CPython 3.12-3.13.
+onnxruntime==1.31.1
+opencv-python-headless==5.0.0.93
+numpy==2.5.4
+rawpy==0.28.0
+pillow==13.0.0
+fastapi==0.162.5
+uvicorn==0.54.0
+python-multipart==0.0.33

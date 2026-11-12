@@ -173,10 +173,13 @@ def test_parse_cache_key_includes_shape():
 @pytest.fixture(scope='module')
 def client(tmp_path_factory):
     os.environ['PIXLITE_WORK_DIR'] = str(tmp_path_factory.mktemp('work'))
+    # 路径白名单 (Issue #1): 允许仓库目录与 pytest 临时目录
+    os.environ['PIXLITE_ALLOWED_ROOTS'] = os.pathsep.join([ROOT, str(tmp_path_factory.getbasetemp())])
     import main
     importlib.reload(main)
     from fastapi.testclient import TestClient
-    return TestClient(main.app), main
+    # 本机回环客户端 (未配置 token 时远程请求会被 fail-closed 拒绝, 见 test_issues.py)
+    return TestClient(main.app, client=('127.0.0.1', 50000)), main
 
 
 def test_server_imports_without_web_dir(client):

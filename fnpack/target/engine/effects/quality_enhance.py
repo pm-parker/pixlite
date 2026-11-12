@@ -40,7 +40,11 @@ def _tile_forward(bgr, tile=256, scale=2):
     return (out / np.maximum(weight, 1e-6) * 255.0).clip(0, 255).astype(np.uint8)
 
 def enhance_quality(bgr, degree=0.7, max_side=2048):
-    """超分重建后按 degree 混合回原分辨率（保留原始构图, 只提升质感）."""
+    """超分重建后按 degree 混合回原分辨率（保留原始构图, 只提升质感）.
+    Issue #11: degree<=0 直接返回原图, 不加载模型、不做推理。"""
+    degree = float(np.clip(degree, 0, 1))
+    if degree <= 0:
+        return bgr
     H, W = bgr.shape[:2]
     # 限边: 大图先缩到 max_side 再超分, 防 CPU 巨耗时
     proc = bgr

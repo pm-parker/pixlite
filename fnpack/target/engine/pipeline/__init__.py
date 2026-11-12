@@ -22,7 +22,12 @@ def _skin_mask(ctx, bgr):
         if m.shape[:2] != bgr.shape[:2]:
             m = cv2.resize(m, (bgr.shape[1], bgr.shape[0]), interpolation=cv2.INTER_NEAREST)
         return m
-    except Exception:
+    except Exception as e:
+        # 不再静默: 记录原因, 调用方按 fail-closed 跳过局部效果 (Issue #6)
+        try:
+            ctx.setdefault('warnings', []).append(f'skin mask unavailable: {type(e).__name__}: {e}'[:200])
+        except Exception:
+            pass
         return None
 
 def _parsing(ctx, bgr):
@@ -108,15 +113,24 @@ class Pipeline:
                 except Exception:
                     pass  # mesh optional; ops fall back to no-op
                 # 自动人群识别 (insightface genderage, 96x96 RGB)
+                # Issue #9: 旧代码只识别第一张脸并把结果复制给所有人。现在逐脸识别并写入
+                # 各自的 face['person']; 全图级 routing/人群系数只有在所有已识别人脸属于
+                # 同一人群时才自动启用, 混合人群 (如新人+长辈合影) 回退 adult 默认参数,
+                # 避免用一个人的属性去调整所有人。
                 if ctx['faces'] and not pr.get('person'):
                     from ..perception.agegender import classify
-                    f0 = ctx['faces'][0]
-                    info = classify(bgr, f0.get('box', (0, 0, bgr.shape[1], bgr.shape[0])))
-                    if info:
-                        pop = info['group']
-                        ctx['person'] = info
-                        for f_ in ctx['faces']:
+                    groups = []
+                    for f_ in ctx['faces']:
+                        info = classify(bgr, f_.get('box', (0, 0, bgr.shape[1], bgr.shape[0])))
+                        if info:
                             f_['person'] = info
+                            groups.append(info['group'])
+                    ctx['person_groups'] = groups
+                    if groups and len(set(groups)) == 1:
+                        pop = groups[0]
+                        ctx['person'] = ctx['faces'][0].get('person')
+                    elif groups:
+                        ctx['mixed_population'] = True
                 if pr.get('person'):
                     pop = pr['person']  # manual override: 女/男/child/elder_f/elder_m
                 pop = self.detect_population(ctx['faces']) if not (ctx['faces'] and pop != 'adult') else pop
@@ -293,11 +307,13 @@ class Pipeline:
                     lab[..., 1] = np.clip(lab[..., 1] + 128.0, 0, 255)
                     lab[..., 2] = np.clip(lab[..., 2] + 128.0, 0, 255)
                     adj = cv2.cvtColor(np.round(lab).astype(np.uint8), cv2.COLOR_LAB2BGR)
+                    # Issue #6: 掩码不可用时 fail closed — 跳过局部肤色调整, 绝不回退到
+                    # 整图调整 (旧代码 else: bgr = adj 会把背景/衣服一起美白/提亮)
                     if skin is not None:
                         m = (skin.astype(np.float32) / 255.0)[..., None]
                         bgr = (adj * m + bgr * (1 - m)).astype(np.uint8)
                     else:
-                        bgr = adj
+                        ctx.setdefault('warnings', []).append('skin_tone skipped: skin mask unavailable')
                 if pr.get('hsl'):
                     bgr = E.skin_tone_hsl(bgr, ctx['parsing'], pr['hsl'])
             elif op == 'teeth_whiten':

@@ -71,3 +71,5 @@ for name, fn in OPS:
 
 json.dump(diffs, open(os.path.join(OUT, 'diffs.json'), 'w'), indent=1)
 print('\nfails:', fails if fails else 'none')
+# Issue #12: 失败必须以非零退出码结束, 便于 CI / pytest 捕获
+sys.exit(1 if fails else 0)

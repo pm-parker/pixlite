@@ -191,9 +191,10 @@ async function runBatch() {
       try {
         const s = await API.batchStatus(r.job)
         fails = 0
-        if (s.status === 'done' || s.status === 'error') {
+        if (['done', 'error', 'cancelled', 'unknown'].includes(s.status)) {
           clearInterval(t); batchRunning.value = false
           if (s.status === 'done') ElMessage.success(`批量完成：${s.done}/${s.total} 已输出至 ${r.dst}`)
+          else if (s.status === 'cancelled') ElMessage.warning(`批量已取消：完成 ${s.done}/${s.total}`)
           else ElMessage.error(s.error || '批量失败')
         } else {
           batchStat.value = s

@@ -34,21 +34,7 @@ async function load(p) {
     dirs.value = r.dirs || []
     images.value = r.images || []
     // 面包屑
-    if (!path.value) stack.value = []
-    else {
-      const parts = path.value.replace(/\\/g, '/').split('/').filter(Boolean)
-      stack.value = parts.map((part, i) => ({
-        name: part,
-        path: parts.slice(0, i + 1).join('/').startsWith('.')
-          ? path.value : (part.includes(':') ? part + '/' : ''),
-      }))
-      // 修正盘符路径
-      let acc = ''
-      stack.value = parts.map(part => {
-        acc = acc ? acc + '/' + part : (part.endsWith(':') ? part + '/' : part)
-        return { name: part, path: acc }
-      })
-    }
+    stack.value = path.value ? buildCrumbs(path.value) : []
   } finally {
     loading.value = false
   }
@@ -56,7 +42,26 @@ async function load(p) {
 
 watch(() => props.modelValue, v => { if (v && !path.value) load('') })
 
-function enter(d) { load(path.value ? path.value.replace(/[\\/]+$/, '') + '/' + d : '') }
+/* Issue #5: 保留 POSIX 绝对路径的前导 '/', 根目录 '/' 自身也是一级面包屑;
+   Windows 盘符路径保持 'C:/...' 形式。 */
+function buildCrumbs(p) {
+  const norm = p.replace(/\\/g, '/')
+  const posix = norm.startsWith('/')
+  const parts = norm.split('/').filter(Boolean)
+  if (posix && !parts.length) return [{ name: '/', path: '/' }]
+  let acc = posix ? '' : null
+  return parts.map(part => {
+    if (acc === null) acc = part.endsWith(':') ? part + '/' : part
+    else acc = (acc.endsWith('/') ? acc : acc + '/') + part
+    return { name: part, path: posix && !acc.startsWith('/') ? '/' + acc : acc }
+  })
+}
+const isAbs = d => d.startsWith('/') || /^[A-Za-z]:[\\/]?/.test(d)
+function enter(d) {
+  // 根列表 (path 为空) 返回的是绝对路径: 直接进入, 旧代码此时 load('') 原地刷新
+  if (!path.value || isAbs(d)) return load(d)
+  load(path.value.replace(/[\\/]+$/, '') + '/' + d)
+}
 function crumb(p) { load(p) }
 function up() {
   if (!stack.value.length) return

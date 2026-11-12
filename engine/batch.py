@@ -17,8 +17,23 @@ def collect_images(src_dir, recursive=True):
                 out.append(os.path.join(root, f))
     return sorted(out)
 
+MAX_PIXELS = int(os.environ.get('PIXLITE_MAX_PIXELS', 100_000_000))
+
+def _check_dims(path):
+    """解码前按图像头尺寸拒绝超大图 (防解压炸弹, Issue #2)。"""
+    try:
+        from PIL import Image
+        Image.MAX_IMAGE_PIXELS = None
+        with Image.open(path) as im:
+            w, h = im.size
+    except Exception:
+        return
+    if w * h > MAX_PIXELS:
+        raise ValueError(f'image {w}x{h} exceeds PIXLITE_MAX_PIXELS={MAX_PIXELS}')
+
 def load_image(path):
     import cv2, numpy as np
+    _check_dims(path)
     ext = os.path.splitext(path)[1].lower()
     if ext in RAW_EXTS:
         import rawpy
@@ -47,9 +62,15 @@ class BatchJob:
         self.total = self.done = self.failed = 0
         self.errors = []
         self.status = 'pending'
+        self.cancelled = False
         self._lock = threading.Lock()
 
+    def cancel(self):
+        self.cancelled = True
+
     def _process_one(self, src_path):
+        if self.cancelled:
+            return 'cancelled'
         rel = os.path.relpath(src_path, self.src)
         dst_path = os.path.join(self.dst, os.path.splitext(rel)[0] + '.jpg')
         if self.skip_existing and os.path.exists(dst_path):
@@ -75,6 +96,8 @@ class BatchJob:
                     with self._lock:
                         if r == 'ok' or r == 'skipped':
                             self.done += 1
+                        elif r == 'cancelled':
+                            pass
                         else:
                             self.failed += 1
                             self.errors.append((src, r))
@@ -84,8 +107,9 @@ class BatchJob:
                         self.errors.append((src, str(e)[:200]))
                 if progress_cb:
                     progress_cb(self.done + self.failed, self.total)
-        self.status = 'done'
+        self.status = 'cancelled' if self.cancelled else 'done'
         return {
+            'cancelled': self.cancelled,
             'total': self.total, 'done': self.done, 'failed': self.failed,
             'elapsed': round(time.time() - t0, 1),
             'errors': self.errors[:20],

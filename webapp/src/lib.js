@@ -42,9 +42,18 @@ export const API = {
     fd.append('src_dir', srcDir); fd.append('preset', preset)
     if (dstDir) fd.append('dst_dir', dstDir)
     fd.append('recursive', recursive); fd.append('workers', workers)
-    return fetch('/api/batch', { method: 'POST', body: fd, headers: _h() }).then(r => r.json())
+    const resp = await fetch('/api/batch', { method: 'POST', body: fd, headers: _h() })
+    const data = await resp.json().catch(() => ({}))
+    if (!resp.ok) throw new Error(data.error || `批量请求失败(${resp.status})`)
+    return data
   },
-  batchStatus: (id) => fetch(`/api/batch/${id}`, { headers: _h() }).then(r => r.json()),
+  batchStatus: async (id) => {
+    const resp = await fetch(`/api/batch/${id}`, { headers: _h() })
+    const data = await resp.json().catch(() => ({}))
+    if (!resp.ok && resp.status !== 404) throw new Error(data.error || `批量状态获取失败(${resp.status})`)
+    return data
+  },
+  batchCancel: (id) => fetch(`/api/batch/${id}/cancel`, { method: 'POST', headers: _h() }).then(r => r.json()),
 }
 
 /* ---------- 项目模型（localStorage 持久化） ----------

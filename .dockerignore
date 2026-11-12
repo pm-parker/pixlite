@@ -1,0 +1,10 @@
+.git
+**/node_modules
+**/__pycache__
+server/web
+server/work
+fnpack/target
+tests/out_*
+*.fpk
+*.zip
+engine/perception/models/*.onnx
