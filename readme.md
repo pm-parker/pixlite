@@ -18,3 +18,13 @@
 python tools/download_models.py            # 直连
 python tools/download_models.py --mirror   # 国内走 hf-mirror.com
 ```
+
+## 飞牛 fnOS 安装包（自动构建）
+
+`.github/workflows/build-fpk.yml` 用官方 [fnpack](https://developer.fnnas.com/docs/cli/fnpack/) 自动打包：
+
+- push 到 `main` / PR：跑测试并打精简包，在 Actions 运行页的 Artifacts 下载 `.fpk`
+- 推送 tag `vX.Y.Z`：版本号取 tag，同时构建精简包和内置模型的 `_full.fpk`，发布到 GitHub Release
+- 手动运行（Actions → Build fnOS package → Run workflow）可勾选同时构建 full 包
+
+本地打包：`python fnpack/build_pkg.py --fnpack /path/to/fnpack [--with-models] [--version X.Y.Z]`，产物在 `dist/`。

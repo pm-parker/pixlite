@@ -1,0 +1,193 @@
+# 自动打包飞牛 fnOS 原生安装包 (.fpk)
+#
+# 触发:
+#   - push 到 main / PR: 跑测试 + 打包, .fpk 作为 Actions artifact (保留 30 天)
+#   - push tag v*.*.* (如 v0.1.12): 用 tag 号作为版本, 并发布到 GitHub Release
+#   - 手动 (Actions → Build fnOS package → Run workflow): 可选是否内置模型
+#
+# 产物:
+#   fnnas.pixlite_<version>.fpk        精简包, 首次使用在 NAS 上运行 tools/download_models.py
+#   fnnas.pixlite_<version>_full.fpk   内置全部模型 (~1.1GB, 仅 tag 发布或手动勾选时构建)
+name: Build fnOS package
+
+on:
+  push:
+    branches: [main]
+    tags: ['v*.*.*']
+    paths-ignore: ['**.md', 'docs/**']
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      with_models:
+        description: '同时构建内置模型的 full 包 (~1.1GB)'
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: fpk-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  FNPACK_VERSION: '1.2.3'
+  # 官方下载地址 https://developer.fnnas.com/docs/cli/fnpack/ , 按 sha256 固定
+  FNPACK_SHA256: '54b97fa7b70968c4d05c79840f5daeff508957d0bb2062fdb0376d00d9615c93'
+
+jobs:
+  test:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.12'
+          cache: pip
+          cache-dependency-path: |
+            requirements.txt
+            requirements-dev.txt
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '22'
+      - name: Install deps
+        run: |
+          sudo apt-get update && sudo apt-get install -y --no-install-recommends libgl1 libglib2.0-0
+          python -m pip install -r requirements-dev.txt
+      - name: Unit / API tests (model-dependent tests auto-skip)
+        run: python -m pytest -q
+
+  package:
+    needs: test
+    runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: true
+      matrix:
+        variant: [lite, full]
+    steps:
+      - name: Decide whether to build this variant
+        id: gate
+        run: |
+          run=true
+          if [ "${{ matrix.variant }}" = "full" ]; then
+            run=false
+            if [ "${{ startsWith(github.ref, 'refs/tags/v') }}" = "true" ] || \
+               [ "${{ github.event_name }}" = "workflow_dispatch" -a "${{ inputs.with_models }}" = "true" ]; then
+              run=true
+            fi
+          fi
+          echo "run=$run" >> "$GITHUB_OUTPUT"
+
+      - uses: actions/checkout@v7
+        if: steps.gate.outputs.run == 'true'
+
+      - uses: actions/setup-python@v7
+        if: steps.gate.outputs.run == 'true'
+        with:
+          python-version: '3.12'
+
+      - uses: actions/setup-node@v7
+        if: steps.gate.outputs.run == 'true'
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: webapp/package-lock.json
+
+      - name: Install fnpack ${{ env.FNPACK_VERSION }}
+        if: steps.gate.outputs.run == 'true'
+        run: |
+          curl -fsSL -o /tmp/fnpack "https://static2.fnnas.com/fnpack/fnpack-${FNPACK_VERSION}-linux-amd64"
+          echo "${FNPACK_SHA256}  /tmp/fnpack" | sha256sum -c -
+          chmod +x /tmp/fnpack && sudo mv /tmp/fnpack /usr/local/bin/fnpack
+          fnpack --help | head -2
+
+      - name: Resolve version
+        if: steps.gate.outputs.run == 'true'
+        id: ver
+        run: |
+          base=$(sed -n 's/^version *= *//p' fnpack/manifest | tr -d '[:space:]')
+          if [[ "$GITHUB_REF" == refs/tags/v* ]]; then
+            v="${GITHUB_REF#refs/tags/v}"
+          else
+            v="$base"
+          fi
+          echo "version=$v" >> "$GITHUB_OUTPUT"
+          echo "fnpack manifest version: $base -> package version: $v"
+
+      - name: Cache models
+        if: steps.gate.outputs.run == 'true' && matrix.variant == 'full'
+        uses: actions/cache@v6
+        with:
+          path: engine/perception/models/*.onnx
+          key: models-${{ hashFiles('engine/perception/models_manifest.py') }}
+
+      - name: Download & verify models (sha256)
+        if: steps.gate.outputs.run == 'true' && matrix.variant == 'full'
+        run: python tools/download_models.py
+
+      - name: Build .fpk
+        if: steps.gate.outputs.run == 'true'
+        run: |
+          extra=""
+          [ "${{ matrix.variant }}" = "full" ] && extra="--with-models"
+          python fnpack/build_pkg.py --version "${{ steps.ver.outputs.version }}" --out dist $extra
+
+      - name: Inspect package
+        if: steps.gate.outputs.run == 'true'
+        run: |
+          set -e
+          f=$(ls dist/*.fpk)
+          mkdir -p /tmp/inspect && tar -xzf "$f" -C /tmp/inspect
+          for p in manifest ICON.PNG ICON_256.PNG app.tgz cmd/main config/privilege config/resource; do
+            test -e "/tmp/inspect/$p" || { echo "missing $p"; exit 1; }
+          done
+          grep -E '^(appname|version|checksum)' /tmp/inspect/manifest
+          tar -tzf /tmp/inspect/app.tgz > /tmp/inspect/list
+          for p in ui/config server/web/index.html server/api/main.py requirements.txt; do
+            grep -qE "(^|/)${p}$" /tmp/inspect/list || { echo "app.tgz missing $p"; exit 1; }
+          done
+          echo "LUT filters: $(grep -c 'lut/Filters/.*/filter.png$' /tmp/inspect/list)"
+          echo "onnx models: $(grep -c '\.onnx$' /tmp/inspect/list || true)"
+          ls -la dist/
+          (cd dist && sha256sum *.fpk > "$(basename "$f").sha256")
+
+      - uses: actions/upload-artifact@v7
+        if: steps.gate.outputs.run == 'true'
+        with:
+          name: fpk-${{ matrix.variant }}-${{ steps.ver.outputs.version }}
+          path: dist/*
+          retention-days: 30
+          compression-level: 0
+          if-no-files-found: error
+
+  release:
+    needs: package
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v8
+        with:
+          pattern: fpk-*
+          path: dist
+          merge-multiple: true
+      - name: Publish GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          ls -la dist
+          tag="${GITHUB_REF#refs/tags/}"
+          notes="飞牛 fnOS 安装包 (自动构建 ${GITHUB_SHA::7})
+
+          - \`*_full.fpk\`：内置全部 AI 模型，离线可用
+          - 其他 \`.fpk\`：精简包，安装后在 NAS 上执行 \`python tools/download_models.py\` 下载模型
+
+          安装：飞牛应用中心 → 手动安装 → 选择 .fpk；或 SSH 执行 \`appcenter-cli install-fpk <file>.fpk\`。"
+          # GitHub Release 单文件上限 2GiB
+          if gh release view "$tag" -R "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            gh release upload "$tag" dist/* --clobber -R "$GITHUB_REPOSITORY"
+          else
+            gh release create "$tag" dist/* -R "$GITHUB_REPOSITORY" --title "PixLite $tag" --notes "$notes"
+          fi
