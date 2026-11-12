@@ -1,7 +1,10 @@
 """Hair effects 2 — 头发柔顺, 发缝填充, 颅顶调整, 发量左右, 发色统一."""
-import numpy as np, cv2
+from __future__ import annotations
+
+import cv2
+import numpy as np
+
 from ..perception import mask_of
-from ..perception import landmarks as L
 
 
 def hair_smooth(bgr, parsing, degree=0.5):
@@ -15,7 +18,7 @@ def hair_smooth(bgr, parsing, degree=0.5):
     smooth = cv2.bilateralFilter(smooth, 9, 60, 60)
     low = cv2.GaussianBlur(bgr, (0, 0), 2.5)
     tex = cv2.subtract(bgr, low)
-    smooth = cv2.add(smooth, cv2.multiply(tex, 0.45))
+    smooth = cv2.add(smooth, tex * 0.45)
     w = (cv2.GaussianBlur((m > 128).astype(np.float32), (0, 0), 3) * d)[..., None]
     return np.clip(bgr * (1 - w) + smooth * w, 0, 255).astype(np.uint8)
 
@@ -94,7 +97,6 @@ def _volume_side(bgr, m, parsing, d, side):
     if band.max() == 0:
         return bgr
     yy, xx = np.mgrid[0:h, 0:w].astype(np.float32)
-    dist = np.abs(xx - face_cx)
     horiz = np.sign(xx - face_cx if side == 'r' else face_cx - xx)
     fall = cv2.GaussianBlur((band > 128).astype(np.float32), (0, 0), 6)
     dispX = horiz * 8.0 * d * fall

@@ -7,7 +7,11 @@
 (腮红→颧骨椭圆, 修容→颧骨下侧, 眉→眉多边形, 睫毛/眼线→眼睑环, 眼影→眼睑
 外环, 唇→LIPS_OUTER)。同部位多条目(正/侧脸贴图)取 max 权重合并为一次上妆。
 """
-import os, json, cv2, numpy as np
+import json
+import os
+
+import cv2
+import numpy as np
 
 RECIPES_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__),
                                             '..', '..', 'presets', 'suit_recipes.json'))
@@ -31,7 +35,8 @@ DEFAULT_SHIFT = {
 
 def load_recipes():
     if 'r' not in _cache:
-        _cache['r'] = json.load(open(RECIPES_PATH, encoding='utf-8'))
+        with open(RECIPES_PATH, encoding='utf-8') as f:
+            _cache['r'] = json.load(f)
     return _cache['r']
 
 
@@ -52,7 +57,7 @@ def list_suits():
 def _mix_to_shift(mix_bgr01):
     """MixColor (配方为 [r,g,b,a]) → LAB shift: a/b 直接用其色度 (相对中性 128),
     L 向该色亮度方向靠. 该色越饱和妆色越明确."""
-    bgr = np.uint8([[[mix_bgr01[2], mix_bgr01[1], mix_bgr01[0]]]])  # rgb→bgr
+    bgr = np.array([[[mix_bgr01[2], mix_bgr01[1], mix_bgr01[0]]]], dtype=np.uint8)  # rgb→bgr
     lab = cv2.cvtColor(bgr, cv2.COLOR_BGR2LAB)[0, 0].astype(np.float32)
     da = float(lab[1] - 128)
     db = float(lab[2] - 128)
@@ -115,7 +120,8 @@ def apply_suit(bgr, faces=None, suit_id='MU00000001', degree=0.7):
     if suit_id not in recipes:
         return bgr
     if faces is None:
-        from .makeup_transfer import get_face_detector_cached, _dedupe_faces
+        from .makeup_transfer import _dedupe_faces, get_face_detector_cached
+
         faces = get_face_detector_cached()(bgr)
     faces = faces or []
     from .makeup_transfer import _dedupe_faces
