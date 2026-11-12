@@ -56,6 +56,10 @@ jobs:
         run: |
           sudo apt-get update && sudo apt-get install -y --no-install-recommends libgl1 libglib2.0-0
           python -m pip install -r requirements-dev.txt
+      - name: Lint (ruff, 判据见 ruff.toml)
+        run: |
+          pipx install ruff==0.17.4
+          ruff check server/api/main.py fnpack/build_pkg.py tests/
       - name: Unit / API tests (model-dependent tests auto-skip)
         run: python -m pytest -q
 
@@ -149,7 +153,8 @@ jobs:
                    engine/perception/model_store.py requirements.txt; do
             grep -qE "(^|/)${p}$" /tmp/inspect/list || { echo "app.tgz missing $p"; exit 1; }
           done
-          mkdir -p /tmp/inspect/app && tar -xzf /tmp/inspect/app.tgz -C /tmp/inspect/app ./ui/config ui/config 2>/dev/null || true
+          mkdir -p /tmp/inspect/app
+          tar -xzf /tmp/inspect/app.tgz -C /tmp/inspect/app ./ui/config ui/config 2>/dev/null || true
           cfg=$(find /tmp/inspect/app -path '*ui/config' | head -1)
           grep -q '"gatewaySocket": "app.sock"' "$cfg" || { echo "ui/config has no gateway entry"; exit 1; }
           echo "LUT filters: $(grep -c 'lut/Filters/.*/filter.png$' /tmp/inspect/list)"

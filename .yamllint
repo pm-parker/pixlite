@@ -1,0 +1,8 @@
+# 仓库约定: 行长上限 120 (与 ruff.toml 一致); GitHub Actions 的 on: 是合法键
+extends: default
+rules:
+  line-length:
+    max: 120
+  truthy:
+    check-keys: false
+  document-start: disable

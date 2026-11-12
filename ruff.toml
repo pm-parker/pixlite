@@ -1,0 +1,35 @@
+# PixLite Python lint 基线 (ruff >= 0.12; 开发机无全局安装, 用 `uvx ruff check .`)
+#
+# 背景: ruff 0.12+ 默认集包含 BLE001/B008/S110 等新规则, 本文件把判据钉死在仓库里,
+# 避免 ruff 升级导致 CI 判据漂移。当前基线: server/api/main.py 与 fnpack/build_pkg.py
+# (发布链路) 必须零告警; 其余目录存量债务见 `ruff check . --statistics`, 渐进清理。
+target-version = "py39"   # 3.9 是 removeprefix/walrus 的下限; CI 与 NAS venv 均 >= 3.11
+line-length = 120
+
+[lint]
+select = [
+    "E", "F", "W",     # pycodestyle / pyflakes (含未用变量/导入)
+    "I",               # import 排序
+    "UP",              # 语法现代化
+    "B",               # bugbear 常见坑
+    "SIM",             # 可简化写法
+    "ASYNC",           # async 函数里的阻塞调用
+    "FURB",            # refurb 现代化
+    "RUF",             # ruff 自家规则 (含失效 noqa 检测)
+    "S110",            # try-except-pass 必须显式交代
+    "PLW1510",         # subprocess.run 必须显式 check
+    "TRY004",          # 类型校验应抛 TypeError (FastAPI 场景例外见逐行 noqa)
+]
+ignore = [
+    "RUF001", "RUF002", "RUF003",  # 全角标点告警: 中文文案/注释项目, ，、（）是刻意排版
+]
+
+[lint.per-file-ignores]
+"server/api/main.py" = [
+    "B008",            # FastAPI 依赖注入惯用法: File(...)/Form(...) 必须写在参数默认值
+    "BLE001",          # 兜底 except 已把错误写入 job 状态 / 诊断事件 (取舍说明见文件头)
+    "S110",            # 同上: EXIF 子 IFD 等单点失败不应拖垮整个接口
+]
+"tests/test_regressions.py" = [
+    "E402",            # sys.path.insert 注入仓库根后才能 import engine.*, 顺序是刻意的
+]

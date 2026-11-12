@@ -1,7 +1,14 @@
 """Automatic model provisioning (engine/perception/model_store.py): failover between
 sources, resume after a dropped connection, sha256 rejection, persistent dir lookup,
 and the server's 503 'models pending' contract."""
-import os, sys, threading, http.server, functools, importlib, importlib.util, hashlib, time
+import hashlib
+import http.server
+import importlib
+import importlib.util
+import os
+import sys
+import threading
+
 import pytest
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -10,7 +17,9 @@ sys.path.insert(0, os.path.join(ROOT, 'server', 'api'))
 
 
 def load_store():
-    spec = importlib.util.spec_from_file_location('ms_test', os.path.join(ROOT, 'engine', 'perception', 'model_store.py'))
+    spec = importlib.util.spec_from_file_location(
+        'ms_test', os.path.join(ROOT, 'engine', 'perception', 'model_store.py'))
+    assert spec is not None and spec.loader is not None
     m = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(m)
     return m
@@ -28,7 +37,7 @@ def fake_models(tmp_path, monkeypatch):
     state = {'cut': set()}
 
     class H(http.server.BaseHTTPRequestHandler):
-        def log_message(self, *a):
+        def log_message(self, format, *args):
             pass
 
         def do_GET(self):
@@ -59,7 +68,7 @@ def fake_models(tmp_path, monkeypatch):
     for k, v in blobs.items():
         ms.MODELS[k] = dict(url=f'{base}/dead/{k}', mirrors=[f'{base}/flaky/{k}'],
                             size=len(v), sha256=hashlib.sha256(v).hexdigest())
-    ms.BUNDLED_DIR = str(tmp_path / 'bundled')
+    monkeypatch.setattr(ms, 'BUNDLED_DIR', str(tmp_path / 'bundled'))
     monkeypatch.setenv('PIXLITE_MODELS_DIR', str(tmp_path / 'store'))
     monkeypatch.setenv('PIXLITE_MODEL_MIRROR_FIRST', '0')
     monkeypatch.setattr(ms.time, 'sleep', lambda s: None)
@@ -75,8 +84,8 @@ def test_failover_and_resume(fake_models):
     assert st['ready'] and st['percent'] == 100.0 and st['phase'] == 'ready'
     for k in ms.MODELS:
         assert ms.check(os.path.join(tmp / 'store', k), full=True) is None
-    assert any('404' in l for l in logs)           # official source dead -> skipped
-    assert any('incomplete' in l for l in logs)    # dropped connection -> resumed
+    assert any('404' in line for line in logs)        # official source dead -> skipped
+    assert any('incomplete' in line for line in logs)  # dropped connection -> resumed
 
 
 def test_tampered_source_rejected(fake_models):
@@ -119,7 +128,7 @@ def test_server_returns_503_while_models_pending(tmp_path, monkeypatch):
     monkeypatch.setenv('PIXLITE_AUTO_DOWNLOAD_MODELS', '0')
     monkeypatch.setenv('PIXLITE_REQUIRE_MODELS', '1')
     monkeypatch.setenv('PIXLITE_ALLOWED_ROOTS', str(tmp_path))
-    import main
+    import main  # pi-lens-ignore: 动态 sys.path 注入, pyright 无法静态解析
     importlib.reload(main)
     monkeypatch.setattr(main.model_store, 'status', lambda: {
         'phase': 'downloading', 'ready': False, 'error': '', 'percent': 42.0, 'done_bytes': 1,
@@ -135,6 +144,6 @@ def test_server_returns_503_while_models_pending(tmp_path, monkeypatch):
 
 
 def test_missing_model_raises_friendly_error(tmp_path, monkeypatch):
-    from engine.gpu import make_session, ModelUnavailable
+    from engine.gpu import ModelUnavailable, make_session
     with pytest.raises(ModelUnavailable, match='自动下载'):
         make_session(str(tmp_path / 'modnet.onnx'))

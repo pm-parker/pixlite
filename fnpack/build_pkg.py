@@ -64,7 +64,7 @@ def set_manifest_version(path, version):
             s = fh.read()
     except OSError as e:
         die(f'staged manifest 不可读: {path} ({e})')
-    s, n = re.subn(r'^(version\s*=\s*).*$', lambda m: m.group(1) + version, s, flags=re.M)
+    s, n = re.subn(r'^(version\s*=\s*).*$', lambda m: m.group(1) + version, s, flags=re.MULTILINE)
     if n != 1:
         die('manifest 中没有 version 字段')
     try:
@@ -147,7 +147,8 @@ def main():
 
     build_web(a.skip_web)
     if a.with_models:
-        r = subprocess.run([sys.executable, os.path.join(SRC, 'tools', 'download_models.py'), '--verify'])
+        r = subprocess.run([sys.executable, os.path.join(SRC, 'tools', 'download_models.py'), '--verify'],
+                           check=False)
         if r.returncode != 0:
             die('模型校验失败: 先运行 python tools/download_models.py')
     if LUT_SRC:   # 可选: 从外部目录刷新仓库自带 LUT
@@ -176,7 +177,7 @@ def main():
     except OSError as e:
         die(f'复制元数据失败: {e}')
     for f in glob.glob(os.path.join(stage, 'cmd', '*')):
-        os.chmod(f, 0o755)  # noqa: S103 — cmd/* 是安装器直接执行的钩子脚本，必须有执行位
+        os.chmod(f, 0o755)
     if a.version:
         set_manifest_version(os.path.join(stage, 'manifest'), a.version)
     version = read_manifest(os.path.join(stage, 'manifest'))['version']
@@ -207,11 +208,13 @@ def main():
               'app/engine/pipeline/__init__.py', 'app/tools/download_models.py', 'app/requirements.txt']:
         if not os.path.isfile(os.path.join(stage, f)):
             problems.append(f'{f} 缺失')
+    # 兑底 except Exception: 校验器要把单个坏文件的异常折进 problems 列表继续检查其余项,
+    # 而不是让单个坏文件中断打包前自检
     for f in ['config/privilege', 'config/resource', 'app/ui/config']:
         try:
             with open(os.path.join(stage, f), encoding='utf-8') as fh:
                 json.load(fh)
-        except Exception as e:
+        except (OSError, ValueError) as e:   # 读不了 / 坏 JSON
             problems.append(f'{f} 不是合法 JSON: {e}')
     try:
         with open(os.path.join(stage, 'app/ui/config'), encoding='utf-8') as fh:
@@ -220,7 +223,7 @@ def main():
             problems.append('app/ui/config 未配置统一网关入口')
         elif '.' in ent.get('gatewayPrefix', '') or ent.get('type') != 'iframe':
             problems.append('gatewayPrefix 含点或 type!=iframe (应用中心不解析, 路由不会注册)')
-    except Exception as e:
+    except (KeyError, ValueError, OSError) as e:   # 结构不对 / 坏 JSON / 读不了
         problems.append(f'app/ui/config 解析失败: {e}')
     n_lut = len(glob.glob(os.path.join(app, 'lut', 'Filters', '*', 'filter.png')))
     if n_lut == 0:

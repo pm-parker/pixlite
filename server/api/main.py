@@ -1,11 +1,24 @@
 """FastAPI service — batch retouch API for NAS photos."""
-import os, io, uuid, json, threading, re, glob, time, hmac
-from fastapi import FastAPI, UploadFile, File, Form, Request
+import contextlib
+import glob
+import hmac
+import json
+import os
+import re
+import threading
+import time
+import uuid
+
+import cv2
+import numpy as np
+from fastapi import FastAPI, File, Form, Request, UploadFile
 from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
-import numpy as np, cv2
-from engine.pipeline import Pipeline
+
 from engine.batch import BatchJob, collect_images
+from engine.gpu import ModelUnavailable
+from engine.perception import model_store
+from engine.pipeline import Pipeline
 
 # ---- LUT filters (PixCake 92-filter system) ----
 # 部署配置化: 环境变量优先 (fpk/Docker 部署时指向挂载目录), 缺省退回开发机相对路径
@@ -19,15 +32,21 @@ def _app_version():
         return v
     try:
         mf = os.path.join(os.path.dirname(__file__), '..', '..', 'fnpack', 'manifest')
-        for line in open(mf, encoding='utf-8'):
-            if line.split('=')[0].strip() == 'version':
-                return line.split('=', 1)[1].strip()
+        with open(mf, encoding='utf-8') as fh:
+            for line in fh:
+                if line.split('=')[0].strip() == 'version':
+                    return line.split('=', 1)[1].strip()
     except OSError:
         pass
     return 'dev'
 
 APP_VERSION = _app_version()
 app = FastAPI(title='PixLite', version=APP_VERSION)
+
+# lint 取舍说明 (文件内逐行 noqa 均为刻意为之):
+#   B008 — FastAPI 依赖注入必须以 File(...)/Form(...) 默认值形式声明 (官方惯用法)
+#   BLE001/S110 — 任务线程/EXIF 子 IFD 的兑底异常已写入 job 状态或诊断事件,
+#                 单图失败不应拖垮进程, 静默是有意设计
 
 # ---- 鉴权 (Issue #1): fail closed ----
 # - 设 PIXLITE_TOKEN 后, 非回环请求必须带正确的 X-API-Key。
@@ -155,14 +174,16 @@ def _parse_frontend_events(raw):
         return []
     try:
         ev = json.loads(raw)
-    except Exception:
+    except ValueError:   # json.JSONDecodeError: 前端事件损坏不应影响诊断接口本身
         return [{'kind': 'unparsable_frontend_events', 'raw': raw[:500]}]
     return ev[:20] if isinstance(ev, list) else [ev]
 
 @app.get('/api/debug/report')
 def debug_report(frontend_events: str = ''):
     """诊断报告: 环境 + 服务端最近错误 + 前端传入的报错。用于用户一键复制转发。"""
-    import platform, sys, time as _t
+    import platform
+    import sys
+    import time as _t
     try:
         from engine.gpu import gpu_status
         gpu = gpu_status()
@@ -193,8 +214,6 @@ def debug_report(frontend_events: str = ''):
 # 启动时后台线程检查 8 个模型: full 包内置的直接用; 缺失的自动下载到 PIXLITE_MODELS_DIR
 # (fnOS: ${TRIM_PKGVAR}/models, 升级不丢), 断点续传 + 多源切换 + sha256 校验, 失败每 5 分钟重试。
 # 前端轮询 /api/models/status 显示进度; 模型未就绪时精修返回 503 + 友好提示。
-from engine.perception import model_store
-from engine.gpu import ModelUnavailable
 
 if os.environ.get('PIXLITE_AUTO_DOWNLOAD_MODELS', '1') == '1':
     model_store.start_background(log=lambda m: _log_event('models', m))
@@ -244,7 +263,8 @@ def _log_event(kind, msg):
     del _recent_events[:-50]
 
 def _restore_jobs():
-    """重启恢复: work/ 里 <id>_out.jpg 存在且比对应 _src 新 → 该 job 已完成, 重建条目防止前端 localStorage 的 jobId 全部失效。"""
+    """重启恢复: work/ 里 <id>_out.jpg 存在且比对应 _src 新 → 该 job 已完成,
+    重建条目防止前端 localStorage 的 jobId 全部失效。"""
     n = 0
     for p in glob.glob(os.path.join(WORK, '*_out.jpg')):
         jid = os.path.basename(p)[:-8]
@@ -284,7 +304,7 @@ def _load_preset(name):
     with open(_preset_path(name), encoding='utf-8') as fh:
         d = json.load(fh)
     if not isinstance(d, dict) or not isinstance(d.get('nodes'), list):
-        raise ValueError(f'{name} 不是可执行预设 (缺 nodes)')
+        raise ValueError(f'{name} 不是可执行预设 (缺 nodes)')  # noqa: TRY004 — ValueError 被 FastAPI 映射为 400, TypeError 反而变 500
     return d
 
 def build_preset(base_name, overrides, routing=None, person=None):
@@ -310,7 +330,7 @@ def build_preset(base_name, overrides, routing=None, person=None):
         if '.' not in key:
             continue
         if key.startswith('rt.'):        # routing passthrough (engine-scale values)
-            key = key[3:]
+            key = key.removeprefix('rt.')
         op, param = key.split('.', 1)
         by_op.setdefault(op, {})[param] = val
     for node in preset.get('nodes', []):
@@ -354,9 +374,10 @@ def build_preset(base_name, overrides, routing=None, person=None):
 
 
 # ---- 资源上限 (Issue #2), 均可用环境变量调整 ----
-def _env_int(name, default):
+def _env_int(name: str, default: int) -> int:
+    v = os.environ.get(name)
     try:
-        return int(os.environ.get(name, default))
+        return int(v) if v else default
     except ValueError:
         return default
 MAX_UPLOAD_BYTES = _env_int('PIXLITE_MAX_UPLOAD_MB', 200) * 1024 * 1024   # 单文件 (RAW 可达 100MB+)
@@ -371,15 +392,15 @@ async def _save_upload(file, dst):
     """流式落盘并限制字节数; 超限删除半成品并抛 ValueError。"""
     n = 0
     try:
-        with open(dst, 'wb') as fh:
+        with open(dst, 'wb') as fh:   # noqa: ASYNC230 — 顺序写盘量小, 引 aiofiles/线程池得不偿失
             while chunk := await file.read(1024 * 1024):
                 n += len(chunk)
                 if n > MAX_UPLOAD_BYTES:
                     raise ValueError(f'文件超过上传上限 {MAX_UPLOAD_BYTES // (1024 * 1024)} MB (PIXLITE_MAX_UPLOAD_MB)')
                 fh.write(chunk)
     except BaseException:
-        try: os.remove(dst)
-        except OSError: pass
+        with contextlib.suppress(OSError):
+            os.remove(dst)
         raise
     return n
 
@@ -400,7 +421,11 @@ def _load_image(path):
     _check_dims(path)
     ext = os.path.splitext(path)[1].lower()
     if ext in ('.dng', '.cr2', '.nef', '.arw', '.rw2', '.pef', '.raw', '.orf', '.raf', '.srw'):
-        import rawpy
+        try:
+            import rawpy
+        except ImportError as e:
+            # 开发机/NAS 未装 rawpy 时给前端明确错误, 而不是让 worker 线程 import 即崩
+            raise ModelUnavailable(f'RAW 解码组件未安装 (rawpy): {e}') from e
         with rawpy.imread(path) as rp:
             rgb = rp.postprocess(use_camera_wb=True, output_bps=8, no_auto_bright=False)
         return cv2.cvtColor(rgb, cv2.COLOR_RGB2BGR)
@@ -418,8 +443,8 @@ def _gc_jobs(max_jobs=200, max_files=500):
     srcs = sorted(glob.glob(os.path.join(WORK, '*_src*')), key=os.path.getmtime)
     srcs = [p for p in srcs if os.path.basename(p) not in running_src]
     for p in srcs[:max(0, len(srcs) - max_files)]:
-        try: os.remove(p)
-        except OSError: pass
+        with contextlib.suppress(OSError):
+            os.remove(p)
     # Issue #2: TTL 清理 — 超过 JOB_TTL_SEC 的 work 产物 (_src/_out/ref/uploads) 与对应 job 条目
     now = time.time()
     running_out = {j.get('output') for j in list(jobs.values()) if j.get('status') == 'running'}
@@ -457,8 +482,8 @@ def _run_job(job_id, path, preset, out_path, overrides=None, routing=None, perso
         _log_event('job_error', traceback.format_exc()[-1500:])
         jobs[job_id].update(status='error', error=str(e)[:300])
     finally:
-        try: _gc_jobs()
-        except Exception: pass
+        with contextlib.suppress(Exception):   # GC 失败不应把已完成的 job 改判为 error
+            _gc_jobs()
 
 @app.post('/api/retouch')
 async def retouch(file: UploadFile = File(...), preset: str = Form('wedding_basic'),
@@ -515,7 +540,12 @@ def result(job_id: str):
 def preset_library():
     p = os.path.join(PRESETS, 'preset_library.json')
     if os.path.exists(p):
-        return json.load(open(p, encoding='utf-8'))
+        try:
+            with open(p, encoding='utf-8') as fh:
+                return json.load(fh)
+        except (OSError, ValueError) as e:
+            _log_event('preset_library_error', f'{p}: {e}')
+            return []   # 坏文件不应让整套妆接口 500, 前端退回单预设模式
     return []
 
 @app.get('/api/makeup_suits')
@@ -529,7 +559,10 @@ def makeup_suits():
 
 @app.get('/api/presets')
 def presets():
-    return [f[:-5] for f in os.listdir(PRESETS) if f.endswith('.json')]
+    try:
+        return [f[:-5] for f in os.listdir(PRESETS) if f.endswith('.json')]
+    except OSError:
+        return []   # presets 目录缺失 (异常部署): 空列表而不是 500
 
 # ---- batch directory mode ----
 batch_jobs = {}
@@ -547,9 +580,11 @@ def _run_batch(job_id, src_dir, dst_dir, preset, recursive, workers):
         batch_jobs[job_id].update(status='error', error=str(e)[:300])
 
 @app.post('/api/batch')
-async def batch(src_dir: str = Form(...), dst_dir: str = Form(''),
-                preset: str = Form('wedding_basic'), recursive: bool = Form(True),
-                workers: int = Form(2)):
+def batch(src_dir: str = Form(...), dst_dir: str = Form(''),
+          preset: str = Form('wedding_basic'), recursive: bool = Form(True),
+          workers: int = Form(2)):
+    # 同步 def: 内部全是阻塞 FS 调用 (realpath/listdir/collect_images), 交给 FastAPI
+    # 线程池执行, 不占事件循环 (NAS 机械盘上的目录扫描可达秒级)
     workers = max(1, min(workers, MAX_BATCH_WORKERS))  # 上限防资源耗尽
     if not _path_ok(src_dir):
         return JSONResponse({'error': 'forbidden'}, 403)
@@ -573,7 +608,8 @@ async def batch(src_dir: str = Form(...), dst_dir: str = Form(''),
         return nr
     files = collect_images(src_dir, recursive)
     if len(files) > MAX_BATCH_FILES:
-        return JSONResponse({'error': f'图片数 {len(files)} 超过单批上限 {MAX_BATCH_FILES} (PIXLITE_MAX_BATCH_FILES)'}, 413)
+        return JSONResponse({'error': f'图片数 {len(files)} 超过单批上限 '
+                                      f'{MAX_BATCH_FILES} (PIXLITE_MAX_BATCH_FILES)'}, 413)
     job_id = uuid.uuid4().hex[:12]
     bj = BatchJob(pipe_holder, src_dir, dst, recursive=recursive, workers=workers)
     batch_jobs[job_id] = {'status': 'running', 'done': 0, 'total': len(files),
@@ -605,14 +641,14 @@ def batch_status(job_id: str):
 def _default_roots():
     if os.name == 'nt':
         return [f'{c}:\\' for c in 'CDEFGH' if os.path.isdir(f'{c}:\\')]
-    roots = sorted(glob.glob('/vol[0-9]*')) + ['/var/apps/fnnas.pixlite/share', '/share', '/mnt',
-                                               '/media', '/home']
+    roots = [*sorted(glob.glob('/vol[0-9]*')), '/var/apps/fnnas.pixlite/share', '/share', '/mnt',
+             '/media', '/home']
     return [r for r in roots if os.path.isdir(r)]
 
 def _allowed_roots():
     env = os.environ.get('PIXLITE_ALLOWED_ROOTS')
     roots = [r for r in env.split(os.pathsep) if r] if env else _default_roots()
-    roots = roots + [WORK]
+    roots = [*roots, WORK]
     return [os.path.realpath(r) for r in roots]
 
 DENY_PREFIX = ('c:/windows', 'c:/users/administrator/appdata')
@@ -628,10 +664,7 @@ def _path_ok(p):
     low = rp.lower().replace(os.sep, '/')
     if any(low.startswith(d) for d in DENY_PREFIX):
         return False
-    for r in _allowed_roots():
-        if rp == r or rp.startswith(r.rstrip(os.sep) + os.sep):
-            return True
-    return False
+    return any(rp == r or rp.startswith(r.rstrip(os.sep) + os.sep) for r in _allowed_roots())
 
 @app.get('/api/image')
 def serve_image(path: str):
@@ -650,7 +683,8 @@ def serve_image(path: str):
 @app.post('/api/upload')
 async def upload_file(file: UploadFile = File(...), subdir: str = 'uploads'):
     """本机图片直传 (浏览器 file input → NAS work 目录), 返回保存路径。"""
-    import time as _t, uuid as _u
+    import time as _t
+    import uuid as _u
     fn = os.path.basename(file.filename or 'upload.jpg')
     ext = os.path.splitext(fn)[1].lower()
     if ext not in ('.jpg', '.jpeg', '.png', '.webp', '.dng', '.cr2', '.arw', '.nef'):
@@ -663,7 +697,7 @@ async def upload_file(file: UploadFile = File(...), subdir: str = 'uploads'):
         await _save_upload(file, dst)
     except ValueError as e:
         return JSONResponse({'error': str(e)}, 413)
-    return {'path': dst, 'name': fn, 'size': os.path.getsize(dst)}
+    return {'path': dst, 'name': fn, 'size': os.path.getsize(dst)}   # noqa: ASYNC240 — 单次 stat, 无需线程池
 
 @app.get('/api/browse')
 def browse(path: str = ''):
@@ -686,9 +720,10 @@ def browse(path: str = ''):
 # ---- LUT filters (PixCake 92-filter system) ----
 LUT_NAMES_FILE = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', 'presets', 'lut_names.json'))
 try:
-    LUT_NAMES = json.load(open(LUT_NAMES_FILE, encoding='utf-8'))
-except Exception:
-    LUT_NAMES = {}
+    with open(LUT_NAMES_FILE, encoding='utf-8') as fh:
+        LUT_NAMES = json.load(fh)
+except (OSError, ValueError):
+    LUT_NAMES = {}   # 缺文件/坏 JSON: LUT 名称退回英文 id, 不影响功能
 
 @app.get('/api/filters')
 def filters():
@@ -713,18 +748,14 @@ def exif(path: str):
         return JSONResponse({'error': 'not found'}, 404)
     try:
         from PIL import Image
-        from PIL.ExifTags import TAGS, GPSTAGS
+        from PIL.ExifTags import GPSTAGS, TAGS
         img = Image.open(path)
         raw = img.getexif()
         ex = {}
-        ifd = {}
         for tid, val in raw.items():
             ex[TAGS.get(tid, str(tid))] = val
-        for ifd_name, parse in (('Exif', getattr(img, '_getexif', None)),):
-            pass
         # sub-IFDs
         try:
-            from PIL.Image import Exif
             sub = raw.get_ifd(0x8769) if hasattr(raw, 'get_ifd') else {}
             for tid, val in sub.items():
                 ex[TAGS.get(tid, str(tid))] = val
