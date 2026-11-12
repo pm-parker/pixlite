@@ -65,10 +65,13 @@ def skin_tone_hsl(bgr, parsing, hsl, preset='nuanhuaipi'):
     skin = (mask_of(parsing, 'skin', dilate=2) > 128)
     hh = hsv[..., 0].astype(int)  # 0-179
     for i in range(8):
-        band = (hh >= i * 22) & (hh < (i + 1) * 22) & skin
+        # 末带上界取 180: 旧代码 8*22=176, 色相 176-179 (正红) 的肤色像素不被任何带覆盖
+        band = (hh >= i * 22) & (hh < ((i + 1) * 22 if i < 7 else 180)) & skin
         hsv[..., 0][band] += h[i]
         hsv[..., 1][band] += s[i] * 2.55
         hsv[..., 2][band] += l[i] * 2.55
+    # 色相是环形 0..179: 旧代码直接 clip 到 0..255, 超过 179 的值被 OpenCV 当非法色相
+    hsv[..., 0] = np.mod(hsv[..., 0], 180)
     out = cv2.cvtColor(np.clip(hsv, 0, 255).astype(np.uint8), cv2.COLOR_HSV2BGR)
     mm = (mask_of(parsing, 'skin', dilate=2).astype(np.float32) / 255)[..., None]
     return (bgr * (1 - mm) + out * mm).astype(np.uint8)

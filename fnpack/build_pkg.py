@@ -8,7 +8,8 @@ import os, sys, shutil
 SRC = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 PKG = os.path.join(SRC, 'fnpack')
 STG = os.path.join(PKG, 'target')
-LUT = r'C:\Users\Administrator\pixcake-reverse\effect_config_decrypted\Filters'
+# LUT 源目录: 环境变量优先; 旧代码写死作者 Windows 路径
+LUT = os.environ.get('PIXLITE_LUT_SRC') or r'C:\Users\Administrator\pixcake-reverse\effect_config_decrypted\Filters'
 MODELS = os.path.join(SRC, 'engine', 'perception', 'models')
 
 def main(with_models=False):
@@ -28,10 +29,14 @@ def main(with_models=False):
         if os.path.exists(models_dst):
             shutil.rmtree(models_dst)
     # etc: LUT
+    # BUGFIX: 旧代码先无条件删除 fnpack/etc 再判断 LUT 源是否存在 → 在作者机器以外
+    # 运行一次就把仓库自带的 92 个 LUT 滤镜全部删掉, 打出的包没有滤镜
     etc = os.path.join(PKG, 'etc')
-    if os.path.exists(etc): shutil.rmtree(etc)
-    if os.path.exists(LUT):
+    if os.path.isdir(LUT):
+        if os.path.exists(etc): shutil.rmtree(etc)
         shutil.copytree(LUT, os.path.join(etc, 'lut', 'Filters'))
+    else:
+        print('LUT source not found, keep existing', etc)
     print('staged target:', STG)
     print('with_models =', with_models)
 

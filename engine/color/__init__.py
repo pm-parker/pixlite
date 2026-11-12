@@ -2,60 +2,42 @@
 LUT filters (92-filter system), AI color match (追色, Reinhard+skin protect)."""
 import numpy as np, cv2, os
 
-def apply_lut(bgr, lut_img, degree=70):
-    """Aligned: Filter effect (DegreeRange 0-100, DefaultDegree 70, filter.png = 512x512xH LUT strip).
-    lut_img: PixCake-style LUT texture (Nx1 or horizontal strip); supports .cube-style identity too.
-    Generic fallback: 2D 512x512 vertical-strip LUT (standard .png LUT format)."""
+def _lut_to_cube(lut_img):
+    """Square PNG LUT (k*k tiles of n x n, n = k*k; 512x512 -> 8x8 tiles of 64) -> cube[b, g, r] (BGR).
+    Layout (verified on fnpack/etc/lut/Filters/FT*/filter.png): tile index = blue level
+    (row-major), inside a tile x = red, y = green."""
     h, w = lut_img.shape[:2]
-    # determine layout: square 512x512 = vertical strip (x=blue,y=green)
-    n = 32  # LUT resolution for strip layouts
-    if w == h:
-        lut = lut_img
-        grid = h
-        b_idx = np.clip(np.arange(w) * (grid - 1) // w, 0, grid - 1)
-        g_idx = np.clip(np.arange(h) * (grid - 1) // h, 0, grid - 1)
-        src = np.zeros((h, w, 3), np.uint8)
-        bb, gg = np.meshgrid(b_idx, g_idx)
-        src[..., 0] = bb; src[..., 1] = gg
-        # red = nearest 8x8 tile index
-        r_vals = np.arange(grid) * 255 // (grid - 1)
-        src[..., 2] = np.resize(r_vals, (h, w))
-        lut_map = lut_img
-    else:
-        # horizontal strip: H x N colors, index by (b,g) tile
-        lut_map = lut_img
-        src = None
-    # Simple generic application: trilinear-ish via cv2.transform is complex on strips;
-    # use the dominant approach: resize LUT to 32x32xH if needed, then 3D lookup via remap per channel
-    # For robustness: convert to 3D LUT by sampling — for v0.2 we support square PNG LUTs only.
     if w != h:
-        raise ValueError('only square PNG LUTs supported in v0.1')
-    grid = min(h, 64)
-    lut = cv2.resize(lut_img, (grid, grid), interpolation=cv2.INTER_AREA)
-    hh, ww = bgr.shape[:2]
-    # identity positions
-    blue = (np.arange(ww) * (grid - 1) // max(ww - 1, 1)).astype(np.intp)
-    green = (np.arange(hh) * (grid - 1) // max(hh - 1, 1)).astype(np.intp)
-    # approximate 3D LUT with 2D (b,g) + per-red-level brightness scaling (standard 2.5D trick)
-    out = np.empty_like(bgr)
-    r_levels = 8
-    r8 = bgr[..., 2].astype(np.int32)
-    for rl in range(r_levels):
-        mask_r = (r8 * r_levels // 256) == rl
-        if not mask_r.any():
-            continue
-        ys, xs = np.where(mask_r)
-        sampled = lut[green[ys], blue[xs]].astype(np.float32)
-        # red-scale correction toward target red
-        target_r = rl * 255 // (r_levels - 1)
-        cur_r = sampled[:, 2]
-        gain = np.where(cur_r > 20, target_r / np.maximum(cur_r, 20), 1.0)
-        sampled[..., 2] = np.clip(sampled[..., 2] * 0.5 + bgr[ys, xs, 2] * 0.5, 0, 255)
-        out[ys, xs] = np.clip(sampled, 0, 255).astype(np.uint8)
-    if degree >= 100:
-        return out
-    m = degree / 100.0
-    return (bgr.astype(np.float32) * (1 - m) + out.astype(np.float32) * m).astype(np.uint8)
+        raise ValueError('only square PNG LUTs supported')
+    k = int(round(w ** (1.0 / 3)))
+    n = k * k
+    if k * n != w:
+        raise ValueError(f'unsupported LUT size {w}x{h} (expect k^3 square, e.g. 512 = 8 tiles x 64)')
+    t = lut_img[..., :3].reshape(k, n, k, n, 3)          # [ty, g, tx, r, c]
+    return np.ascontiguousarray(t.transpose(0, 2, 1, 3, 4).reshape(n, n, n, 3)).astype(np.float32)
+
+
+def apply_lut(bgr, lut_img, degree=70):
+    """Aligned: Filter effect (DegreeRange 0-100, DefaultDegree 70, filter.png = 512x512 LUT).
+    3D LUT lookup with trilinear interpolation.
+    BUGFIX: 旧实现按像素的 *坐标* (x->blue, y->green) 而非像素颜色查表, 输出与图像内容
+    无关 (identity LUT 下平均误差 ~63/255), 92 个滤镜全部产生错误的空间渐变色。"""
+    cube = _lut_to_cube(lut_img)
+    n = cube.shape[0]
+    f = bgr.astype(np.float32) * ((n - 1) / 255.0)
+    i0 = np.floor(f).astype(np.intp)
+    np.clip(i0, 0, n - 2, out=i0)
+    fr = f - i0
+    b0, g0, r0 = i0[..., 0], i0[..., 1], i0[..., 2]
+    fb, fg, frr = fr[..., 0:1], fr[..., 1:2], fr[..., 2:3]
+    out = np.zeros(bgr.shape[:2] + (3,), np.float32)
+    for db, wb in ((0, 1 - fb), (1, fb)):
+        for dg, wg in ((0, 1 - fg), (1, fg)):
+            for dr, wr in ((0, 1 - frr), (1, frr)):
+                out += cube[b0 + db, g0 + dg, r0 + dr] * (wb * wg * wr)
+    m = float(np.clip(degree, 0, 100)) / 100.0
+    res = bgr.astype(np.float32) * (1 - m) + out * m
+    return np.clip(res + 0.5, 0, 255).astype(np.uint8)
 
 def color_match(src, ref, protect_skin_mask=None, strength=1.0):
     """Aligned: AI追色 (AIColorMatch / ColorMatchFilter). Reinhard stats transfer in LAB,
@@ -119,8 +101,17 @@ def tone_adjust(bgr, params):
     cla = params.get('clarity', 0) / 100.0
     vib = params.get('vibrance', 0) / 100.0
     sat = params.get('saturation', 0) / 100.0
+    bri = params.get('brightness', 0) / 100.0
+    dhz = params.get('dehaze', 0) / 100.0
     if exp:
         f = f * (2.0 ** exp)
+    if bri:   # 亮度: 中间调 gamma (黑白点不动). 前端有此滑杆, 旧引擎未实现 → 拖动无效
+        f = np.power(np.clip(f, 0, 1), 1.0 / (1.0 + 0.6 * bri) if bri > 0 else 1.0 - 0.6 * bri)
+    if dhz:   # 祛雾: 暗通道估计雾浓度, 去除灰雾并补对比 (前端有此滑杆, 旧引擎未实现)
+        dark = cv2.erode(np.clip(f, 0, 1).min(axis=2), np.ones((15, 15), np.uint8))
+        haze = cv2.GaussianBlur(dark, (0, 0), 15)[..., None]
+        k = 0.8 * dhz
+        f = (f - k * haze) / np.maximum(1 - k * haze, 0.2)
     if con:
         f = (f - 0.5) * (1 + 0.8 * con) + 0.5
     if hi:   # highlight recover/boost: weight by brightness
@@ -153,34 +144,47 @@ def tone_adjust(bgr, params):
 
 def white_balance(bgr, temperature=0, tint=0):
     """Aligned: 白平衡 色温/色调滑杆 (±100). temperature: warm(+)/cool(-),
-    tint: magenta(+)/green(-)."""
-    t = temperature / 100.0
-    g = tint / 100.0
+    tint: magenta(+)/green(-).
+    BUGFIX: 旧实现 temperature>0 反而 B 增 R 减 (变冷); temperature<0 先乘后除完全抵消
+    (负色温无效); tint 对 R/B 用了平方系数, tint>0 实际偏绿, tint<0 三通道同时变亮。"""
+    t = float(np.clip(temperature, -100, 100)) / 100.0
+    g = float(np.clip(tint, -100, 100)) / 100.0
     f = bgr.astype(np.float32)
-    f[..., 0] *= (1 + 0.25 * t)          # B up when cool... BGR: warm = more R less B
-    f[..., 2] *= (1 - 0.25 * t)
-    if t < 0:
-        f[..., 0] = f[..., 0] / (1 + 0.25 * t) / 1  # normalize inverse
-        f[..., 2] = f[..., 2] / (1 - 0.25 * t)
-    f[..., 0] *= (1 - 0.12 * g) * (1 + 0.12 * (-g))  # tint: magenta up R/B, green up G
-    f[..., 1] *= (1 + 0.12 * g) if g > 0 else (1 + 0.12 * (-g))
-    f[..., 2] *= (1 - 0.12 * g) * (1 + 0.12 * (-g))
-    return np.clip(f, 0, 255).astype(np.uint8)
+    if t:
+        f[..., 2] *= (1 + 0.25 * t)      # warm: R up
+        f[..., 0] *= (1 - 0.25 * t)      # warm: B down
+    if g:
+        f[..., 1] *= (1 - 0.12 * g)      # magenta(+): G down / green(-): G up
+        f[..., 0] *= (1 + 0.06 * g)
+        f[..., 2] *= (1 + 0.06 * g)
+    return np.clip(f + 0.5, 0, 255).astype(np.uint8)
+
+
+# HSL 8 色相带中心 (度, 0..360): 红/橙/黄/绿/浅绿/蓝/紫/洋红 (与前端 HSL_BANDS 顺序一致)
+HSL_CENTERS = (0.0, 30.0, 60.0, 120.0, 180.0, 240.0, 270.0, 300.0)
+
+
+def _hue_band_weight(hue_deg, band):
+    """三角权重: 带中心=1, 线性衰减到相邻带中心=0 (左右跨度可不同)。"""
+    c = HSL_CENTERS[band]
+    left = (c - HSL_CENTERS[band - 1]) % 360
+    right = (HSL_CENTERS[(band + 1) % len(HSL_CENTERS)] - c) % 360
+    d = (hue_deg - c + 180.0) % 360.0 - 180.0          # signed -180..180
+    span = np.where(d < 0, left, right)
+    return np.clip(1 - np.abs(d) / span, 0, 1)
 
 
 def hsl_adjust(bgr, band, h, s, l):
-    """Aligned: HSL 8色相带 (红/橙黄/黄/绿/浅绿/蓝/紫/洋红) ±100 色相/饱和度/明亮度."""
+    """Aligned: HSL 8色相带 (红/橙/黄/绿/浅绿/蓝/紫/洋红) ±100 色相/饱和度/明亮度.
+    BUGFIX: 旧实现每带只占 22.5° (8 带合计只覆盖 0-180°), 蓝/紫/洋红像素 (180-360°)
+    任何带都调不动, 而"蓝色"带实际作用在绿色上。"""
+    band = int(band) % len(HSL_CENTERS)
+    if not (h or s or l):
+        return bgr
     hsv = cv2.cvtColor(bgr, cv2.COLOR_BGR2HSV).astype(np.float32)
     hh = hsv[..., 0]  # 0..179
-    # OpenCV hue 0-179 -> 8 bands over 0-360 (each 45°)
-    width = 22.5
-    band_deg = band * width
-    def angdist(a, b):
-        d = np.abs(a - b) % 360
-        return np.minimum(d, 360 - d)
-    hue_deg = hh * 2.0
-    dist = np.minimum(angdist(hue_deg, band_deg), angdist(hue_deg, band_deg + width))
-    w = np.clip(1 - dist / (width * 0.9), 0, 1)  # falloff into neighbouring bands
+    w = _hue_band_weight(hh * 2.0, band)
+    w = w * np.clip(hsv[..., 1] / 40.0, 0, 1)   # 近灰像素无可靠色相, 不参与
     hsv[..., 0] = (hh + h * 0.09 * w) % 180
     hsv[..., 1] = np.clip(hsv[..., 1] + s * 1.2 * w, 0, 255)
     hsv[..., 2] = np.clip(hsv[..., 2] + l * 1.2 * w, 0, 255)

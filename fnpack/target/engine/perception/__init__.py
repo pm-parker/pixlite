@@ -1,7 +1,8 @@
 """Perception layer — aligned with PixCake TSAI detection layer.
 face mesh 478pts + pose + parsing + matting, all local ONNX/MediaPipe."""
 from ..gpu import make_session
-import numpy as np, cv2, os
+import numpy as np, cv2, os, hashlib
+from collections import OrderedDict
 
 MODELS_DIR = os.path.join(os.path.dirname(__file__), 'models')
 
@@ -18,6 +19,25 @@ def get_face_detector():
 
 _parser_cache = {}
 _parser_lock = threading.Lock()
+# face-parsing 结果缓存: key=图像内容 sha1, 同图调参重跑免重推理 (LRU=4)
+_parse_result_cache = OrderedDict()
+_parse_result_lock = threading.Lock()
+PARSE_CACHE_MAX = 4
+
+def cached_parse(parser, bgr):
+    # key 含 shape: 相同字节、不同宽高的图 (如转置) 否则会命中错误尺寸的 parsing
+    h = hashlib.sha1(repr(bgr.shape).encode() + np.ascontiguousarray(bgr).tobytes()).hexdigest()
+    with _parse_result_lock:
+        hit = _parse_result_cache.get(h)
+        if hit is not None:
+            _parse_result_cache.move_to_end(h)
+            return hit
+    out = parser._raw(bgr)
+    with _parse_result_lock:
+        _parse_result_cache[h] = out
+        while len(_parse_result_cache) > PARSE_CACHE_MAX:
+            _parse_result_cache.popitem(last=False)
+    return out
 def get_skin_parser():
     with _parser_lock:
         if 'p' not in _parser_cache:
@@ -46,7 +66,23 @@ class FaceDetector:
                     # pseudo-landmarks from box (YuNet gives 5 pts at [4:14])
                     'landmarks': np.array(f[4:14]).reshape(5, 2),
                 })
-        return out
+        return _nms_faces(out, iou_thr=0.3)
+
+def _nms_faces(faces, iou_thr=0.3):
+    """YuNet 常对同一张脸吐多个高重叠框 — 去重, 否则 facesurgery 逐框
+    做全图位移场, 时间 ×N (实测 8 框 23s → 1 框 2.8s)。"""
+    def iou(a, b):
+        ax, ay, aw, ah = a['box']; bx, by, bw, bh = b['box']
+        x1 = max(ax, bx); y1 = max(ay, by)
+        x2 = min(ax + aw, bx + bw); y2 = min(ay + ah, by + bh)
+        inter = max(0, x2 - x1) * max(0, y2 - y1)
+        return inter / (aw * ah + bw * bh - inter + 1e-6)
+    fs = sorted(faces, key=lambda f: -f['score'])
+    keep = []
+    for f in fs:
+        if all(iou(f, k) < iou_thr for k in keep):
+            keep.append(f)
+    return keep
 
 def estimate_head_yaw(landmarks):
     """Aligned: FaceSurgery normal/side profile switch (AngleRange)."""
@@ -66,7 +102,7 @@ class SkinParser:
         self.sess = make_session(path)
         self.inp = self.sess.get_inputs()[0].name
 
-    def __call__(self, bgr):
+    def _raw(self, bgr):
         rgb = cv2.cvtColor(bgr, cv2.COLOR_BGR2RGB)
         x = cv2.resize(rgb, (512, 512)).astype(np.float32) / 255.0
         x = (x - [0.485, 0.456, 0.406]) / [0.229, 0.224, 0.225]
@@ -74,6 +110,9 @@ class SkinParser:
         logits = self.sess.run(None, {self.inp: x})[0][0]
         seg = logits.argmax(0).astype(np.uint8)
         return cv2.resize(seg, (bgr.shape[1], bgr.shape[0]), interpolation=cv2.INTER_NEAREST)
+
+    def __call__(self, bgr):
+        return cached_parse(self, bgr)
 
 # label ids (SegFormer 19-class)
 CLS = {'bg':0,'skin':1,'nose':2,'eye_g':3,'eye_l':4,'eye_r':5,'brow_l':6,'brow_r':7,

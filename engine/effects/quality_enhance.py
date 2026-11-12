@@ -13,6 +13,11 @@ def get_session():
         _cache['s'] = make_session(MODEL, so)
     return _cache['s']
 
+def _in_dtype():
+    t = get_session().get_inputs()[0].type
+    return np.float16 if 'float16' in t else np.float32
+
+
 def _tile_forward(bgr, tile=256, scale=2):
     """分块超分+无缝拼回（overlap 16 羽化）."""
     H, W = bgr.shape[:2]
@@ -23,10 +28,12 @@ def _tile_forward(bgr, tile=256, scale=2):
         for x in range(0, W, tile - ov):
             y1, x1 = y, x
             y2, x2 = min(H, y + tile), min(W, x + tile)
-            t = bgr[y1:y2, x1:x2].astype(np.float32) / 255.0
-            t = t.transpose(2, 0, 1)[None]
-            r = get_session().run(None, {'input': t})[0][0]  # 3,s*2,s*2
-            r = r.transpose(1, 2, 0)
+            # BGR -> RGB (Real-ESRGAN 以 RGB 训练), 输入 dtype 跟随模型声明:
+            # 下载脚本给的是 fp16 模型, 旧代码喂 float32 → INVALID_ARGUMENT, 画质修复整单失败
+            t = bgr[y1:y2, x1:x2, ::-1].astype(np.float32) / 255.0
+            t = np.ascontiguousarray(t.transpose(2, 0, 1)[None]).astype(_in_dtype())
+            r = get_session().run(None, {'input': t})[0][0].astype(np.float32)  # 3,s*2,s*2
+            r = r.transpose(1, 2, 0)[..., ::-1]
             Y, X = y1 * scale, x1 * scale
             out[Y:Y + r.shape[0], X:X + r.shape[1]] += r
             weight[Y:Y + r.shape[0], X:X + r.shape[1]] += 1.0

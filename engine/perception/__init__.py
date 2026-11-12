@@ -25,7 +25,8 @@ _parse_result_lock = threading.Lock()
 PARSE_CACHE_MAX = 4
 
 def cached_parse(parser, bgr):
-    h = hashlib.sha1(np.ascontiguousarray(bgr).tobytes()).hexdigest()
+    # key 含 shape: 相同字节、不同宽高的图 (如转置) 否则会命中错误尺寸的 parsing
+    h = hashlib.sha1(repr(bgr.shape).encode() + np.ascontiguousarray(bgr).tobytes()).hexdigest()
     with _parse_result_lock:
         hit = _parse_result_cache.get(h)
         if hit is not None:

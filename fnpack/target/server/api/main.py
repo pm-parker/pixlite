@@ -1,5 +1,5 @@
 """FastAPI service — batch retouch API for NAS photos."""
-import os, io, uuid, json, threading, re, glob, time
+import os, io, uuid, json, threading, re, glob, time, hmac
 from fastapi import FastAPI, UploadFile, File, Form
 from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
@@ -25,13 +25,23 @@ async def _auth(request, call_next):
         path = request.url.path
         if not is_local and path.startswith('/api/') and path not in ('/api/health',):
             provided = request.headers.get('X-API-Key') or request.query_params.get('key', '')
-            if provided != API_TOKEN:
+            if not hmac.compare_digest(provided.encode(), API_TOKEN.encode()):
                 return JSONResponse({'error': 'unauthorized'}, status_code=401)
     return await call_next(request)
 
 @app.get('/api/health')
 def health():
     return {'ok': True}
+
+def _parse_frontend_events(raw):
+    """前端事件 JSON 损坏/非列表时不应让诊断接口本身 500 (诊断报告正是出错时才用)。"""
+    if not raw:
+        return []
+    try:
+        ev = json.loads(raw)
+    except Exception:
+        return [{'kind': 'unparsable_frontend_events', 'raw': raw[:500]}]
+    return ev[:20] if isinstance(ev, list) else [ev]
 
 @app.get('/api/debug/report')
 def debug_report(frontend_events: str = ''):
@@ -51,7 +61,7 @@ def debug_report(frontend_events: str = ''):
         'lut_dir_ok': os.path.isdir(LUT_DIR),
         'presets_dir_ok': os.path.isdir(PRESETS),
         'server_events': _recent_events[-20:],
-        'frontend_events': (json.loads(frontend_events) if frontend_events else [])[:20],
+        'frontend_events': _parse_frontend_events(frontend_events),
     }
     # 模型完整性
     try:
@@ -106,11 +116,29 @@ OVERRIDABLE = {
     'facesurgery_d': ('facesurgery', ['degree']),
 }
 
+_PRESET_RE = re.compile(r'^[\w\-]+$')
+
+def _preset_path(name):
+    """preset 名只允许 [字母数字_-]: 旧代码直接拼路径, preset='../../x' 可读任意 .json。"""
+    if not name or not _PRESET_RE.match(name):
+        raise ValueError(f'非法预设名: {name!r}')
+    p = os.path.join(PRESETS, name + '.json')
+    if not os.path.isfile(p):
+        raise ValueError(f'预设不存在: {name}')
+    return p
+
+def _load_preset(name):
+    with open(_preset_path(name), encoding='utf-8') as fh:
+        d = json.load(fh)
+    if not isinstance(d, dict) or not isinstance(d.get('nodes'), list):
+        raise ValueError(f'{name} 不是可执行预设 (缺 nodes)')
+    return d
+
 def build_preset(base_name, overrides, routing=None, person=None):
     """Load preset JSON, apply client slider overrides (op.param=value).
     Unknown ops (tone/hsl/white_balance/lut) are appended as new nodes.
     routing: {group: {op.param: v}} auto per-person routing; person: manual override."""
-    preset = json.load(open(os.path.join(PRESETS, base_name + '.json'), encoding='utf-8'))
+    preset = _load_preset(base_name)
     if routing:
         preset['routing'] = routing
     if person:
@@ -140,6 +168,8 @@ def build_preset(base_name, overrides, routing=None, person=None):
             if len(parts) == 2:
                 bands.setdefault(int(parts[0]), {})[parts[1]] = v
         by_op['hsl'] = bands
+    if 'lut' in by_op and not by_op['lut'].get('filter', 'x'):
+        by_op.pop('lut')          # 空 filter = 未选滤镜 (前端"无"), 不应整单报错
     if 'lut' in by_op and 'filter' in by_op['lut']:
         fid = by_op['lut'].pop('filter')
         lut_path = os.path.join(LUT_DIR, fid, 'filter.png')
@@ -179,9 +209,14 @@ def _load_image(path):
 def _gc_jobs(max_jobs=200, max_files=500):
     """防内存/磁盘无限增长: jobs dict 超限删最旧; work 目录超限删最旧 _src (保留 _out 供导出)."""
     if len(jobs) > max_jobs:
-        for k in sorted(jobs, key=lambda x: jobs[x].get('ts', 0))[:len(jobs) - max_jobs]:
+        # 不淘汰进行中的 job (否则前端轮询拿到 unknown 判失败)
+        done = [k for k in jobs if jobs[k].get('status') != 'running']
+        for k in sorted(done, key=lambda x: jobs[x].get('ts', 0))[:len(jobs) - max_jobs]:
             jobs.pop(k, None)
+    running_src = {os.path.basename(j.get('src', '')) for j in list(jobs.values())
+                   if j.get('status') == 'running'}
     srcs = sorted(glob.glob(os.path.join(WORK, '*_src*')), key=os.path.getmtime)
+    srcs = [p for p in srcs if os.path.basename(p) not in running_src]
     for p in srcs[:max(0, len(srcs) - max_files)]:
         try: os.remove(p)
         except OSError: pass
@@ -190,9 +225,14 @@ def _run_job(job_id, path, preset, out_path, overrides=None, routing=None, perso
     jobs[job_id]['ts'] = time.time()
     try:
         bgr = _load_image(path)
+        if bgr is None:
+            raise ValueError('无法解码图片 (文件损坏或格式不支持)')
         pipe = DictPipeline(build_preset(preset, overrides, routing, person))
         out = pipe.run(bgr, progress_cb=lambda p: jobs[job_id].update(progress=p))
-        cv2.imwrite(out_path, out)
+        ok, buf = cv2.imencode('.jpg', out, [cv2.IMWRITE_JPEG_QUALITY, 95])
+        if not ok:
+            raise RuntimeError('结果编码失败')
+        buf.tofile(out_path)   # unicode-safe (cv2.imwrite 在 Windows 中文路径下静默失败)
         jobs[job_id].update(status='done', output=out_path)
     except Exception as e:
         import traceback
@@ -205,12 +245,9 @@ def _run_job(job_id, path, preset, out_path, overrides=None, routing=None, perso
 @app.post('/api/retouch')
 async def retouch(file: UploadFile = File(...), preset: str = Form('wedding_basic'),
                   overrides: str = Form(''), routing: str = Form(''), person: str = Form('')):
-    job_id = uuid.uuid4().hex[:12]
-    src = os.path.join(WORK, job_id + '_src' + os.path.splitext(file.filename)[1])
-    out = os.path.join(WORK, job_id + '_out.jpg')
-    open(src, 'wb').write(await file.read())
-    jobs[job_id] = {'status': 'running', 'progress': 0, 'output': out}
     # 参数损坏应显式报 400，禁止静默吞掉（否则用户滑杆设置全部丢失且无提示）
+    # 先校验再落盘/登记 job: 旧代码先写文件+登记 running 再 return 400, 留下永不结束的
+    # running job 和孤儿上传文件
     try:
         ov = json.loads(overrides) if overrides else None
     except Exception as e:
@@ -219,19 +256,35 @@ async def retouch(file: UploadFile = File(...), preset: str = Form('wedding_basi
         rt = json.loads(routing) if routing else None
     except Exception as e:
         return JSONResponse({'error': f'routing JSON 无效: {e}'}, status_code=400)
+    try:
+        _preset_path(preset)
+    except ValueError as e:
+        return JSONResponse({'error': str(e)}, status_code=400)
+    job_id = uuid.uuid4().hex[:12]
+    ext = os.path.splitext(os.path.basename(file.filename or ''))[1].lower()
+    if not re.match(r'^\.[a-z0-9]{1,5}$', ext):
+        ext = '.jpg'
+    src = os.path.join(WORK, job_id + '_src' + ext)
+    out = os.path.join(WORK, job_id + '_out.jpg')
+    with open(src, 'wb') as fh:
+        fh.write(await file.read())
+    jobs[job_id] = {'status': 'running', 'progress': 0, 'output': out, 'src': src, 'ts': time.time()}
     threading.Thread(target=_run_job, args=(job_id, src, preset, out, ov, rt, person or None), daemon=True).start()
     return {'job': job_id}
 
 @app.get('/api/job/{job_id}')
 def job(job_id: str):
-    return jobs.get(job_id, {'status': 'unknown'})
+    j = jobs.get(job_id)
+    if not j:
+        return {'status': 'unknown'}
+    return {k: v for k, v in j.items() if k != 'src'}   # 不向前端暴露服务器内部路径
 
 @app.get('/api/result/{job_id}')
 def result(job_id: str):
     j = jobs.get(job_id)
-    if j and j['status'] == 'done':
-        return FileResponse(j['output'])
-    return JSONResponse(j or {}, 404)
+    if j and j['status'] == 'done' and os.path.isfile(j['output']):
+        return FileResponse(j['output'], media_type='image/jpeg')
+    return JSONResponse({k: v for k, v in (j or {}).items() if k != 'src'} or {'status': 'unknown'}, 404)
 
 @app.get('/api/preset_library')
 def preset_library():
@@ -275,9 +328,15 @@ async def batch(src_dir: str = Form(...), dst_dir: str = Form(''),
     if not os.path.isdir(src_dir):
         return JSONResponse({'error': 'src_dir not found'}, 400)
     dst = dst_dir or (src_dir.rstrip('\\/') + '_pixlite')
+    try:
+        pipe_holder = DictPipeline(_load_preset(preset))
+    except ValueError as e:
+        return JSONResponse({'error': str(e)}, 400)
+    # 输出目录不能在源目录内: 递归模式下第二次运行会把上次输出当输入再精修一遍
+    if os.path.realpath(dst).startswith(os.path.realpath(src_dir).rstrip(os.sep) + os.sep):
+        return JSONResponse({'error': 'dst_dir 不能位于 src_dir 内部'}, 400)
     files = collect_images(src_dir, recursive)
     job_id = uuid.uuid4().hex[:12]
-    pipe_holder = Pipeline(os.path.join(PRESETS, preset + '.json'))
     bj = BatchJob(pipe_holder, src_dir, dst, recursive=recursive, workers=workers)
     batch_jobs[job_id] = {'status': 'running', 'done': 0, 'total': len(files),
                           'progress': 0, 'dst': dst, 'job': bj}
@@ -312,13 +371,43 @@ def serve_image(path: str):
         return JSONResponse({'error': 'unsupported'}, 400)
     return FileResponse(path, media_type=mime)
 
+@app.post('/api/upload')
+async def upload_file(file: UploadFile = File(...), subdir: str = 'uploads'):
+    """本机图片直传 (浏览器 file input → NAS work 目录), 返回保存路径。"""
+    import time as _t, uuid as _u
+    fn = os.path.basename(file.filename or 'upload.jpg')
+    ext = os.path.splitext(fn)[1].lower()
+    if ext not in ('.jpg', '.jpeg', '.png', '.webp', '.dng', '.cr2', '.arw', '.nef'):
+        return JSONResponse({'error': 'unsupported'}, 400)
+    d = os.path.join(WORK, 'uploads')
+    os.makedirs(d, exist_ok=True)
+    name = f"{_t.strftime('%Y%m%d_%H%M%S')}_{_u.uuid4().hex[:6]}{ext}"
+    dst = os.path.join(d, name)
+    with open(dst, 'wb') as f:
+        while chunk := await file.read(1024 * 1024):
+            f.write(chunk)
+    return {'path': dst, 'name': fn, 'size': os.path.getsize(dst)}
+
 @app.get('/api/browse')
 def browse(path: str = ''):
     """List dirs/images for NAS path picker."""
     if not path:
-        import string
-        dirs = [f'{c}:\\' for c in 'CDEFGH' if os.path.isdir(f'{c}:\\')]
-        # NAS UNC 根: 枚举已映射盘之外, 加常见 NAS 主机入口提示由前端手输; 这里补 rclone/网盘映射盘
+        dirs = []
+        if os.name == 'nt':
+            dirs = [f'{c}:\\' for c in 'CDEFGH' if os.path.isdir(f'{c}:\\')]
+        else:
+            # fnOS/NAS (Linux): 根目录 + 常见挂载点 + 应用共享目录
+            dirs = ['/']
+            import glob as _g
+            for d in sorted(_g.glob('/vol*')):
+                if os.path.isdir(d): dirs.append(d)
+            # 应用可访问的共享目录 (声明过的 data-share)
+            if os.path.isdir('/var/apps/fnnas.pixlite/share'):
+                for d in sorted(os.listdir('/var/apps/fnnas.pixlite/share')):
+                    dirs.append(f'/var/apps/fnnas.pixlite/share/{d}')
+            # 用户主目录常见位置
+            for d in ['/home', '/share', '/mnt']:
+                if os.path.isdir(d): dirs.append(d)
         return {'dirs': dirs}
     if not os.path.isdir(path):
         return JSONResponse({'error': 'not a dir'}, 400)
@@ -355,6 +444,8 @@ def luts():
 @app.get('/api/exif')
 def exif(path: str):
     """F2: EXIF via Pillow — 相机/镜头/焦距/光圈/快门/ISO/时间/GPS."""
+    if not _path_ok(path):
+        return JSONResponse({'error': 'forbidden'}, 403)
     if not os.path.isfile(path):
         return JSONResponse({'error': 'not found'}, 404)
     try:
@@ -382,21 +473,24 @@ def exif(path: str):
                     if ek == k:
                         return ev
             return default
-        def _rat(v):
+        def _num(v, nd=1):
+            # Pillow 返回 IFDRational (非 tuple), 旧代码的 isinstance(tuple) 分支从不命中,
+            # JSON 序列化后焦距/光圈会变成 "8.0" 之类不稳定格式; 统一转 float
             try:
-                n, d = v
-                return round(n / d, 2) if d else default
+                if isinstance(v, tuple):
+                    return round(v[0] / v[1], nd) if v[1] else v[0]
+                return round(float(v), nd) if v not in ('', None) else ''
             except Exception:
-                return v
-        focal = _g('FocalLength', 'FocalLengthIn35mmFilm')
-        if isinstance(focal, tuple):
-            focal = round(focal[0] / focal[1], 1) if focal[1] else focal[0]
-        ape = _g('FNumber')
-        if isinstance(ape, tuple):
-            ape = round(ape[0] / ape[1], 1) if ape[1] else ape[0]
+                return str(v)
+        focal = _num(_g('FocalLength', 'FocalLengthIn35mmFilm'))
+        ape = _num(_g('FNumber'))
         expo = _g('ExposureTime')
-        if isinstance(expo, tuple) and expo[0] and expo[1]:
-            expo = f'{expo[0]}/{expo[1]}'
+        try:
+            ev = float(expo) if not isinstance(expo, tuple) else (expo[0] / expo[1] if expo[1] else 0)
+            # 旧代码只处理 tuple, Pillow 实际返回 IFDRational → 原样透出 (如 1/85 s 显示为小数或 "1/85" 不定)
+            expo = (f'1/{round(1 / ev)}' if 0 < ev < 1 else f'{ev:g}') if ev else ''
+        except Exception:
+            expo = str(expo)
         # GPS
         gps = {}
         try:
@@ -435,8 +529,18 @@ def filter_thumb(fid: str):
 @app.post('/api/ref')
 async def upload_ref(file: UploadFile = File(...)):
     job_id = 'ref' + uuid.uuid4().hex[:10]
-    p = os.path.join(WORK, job_id + os.path.splitext(file.filename)[1])
-    open(p, 'wb').write(await file.read())
+    ext = os.path.splitext(os.path.basename(file.filename or ''))[1].lower()
+    if ext not in ('.jpg', '.jpeg', '.png', '.webp', '.bmp'):
+        return JSONResponse({'error': 'unsupported'}, 400)
+    p = os.path.join(WORK, job_id + ext)
+    with open(p, 'wb') as fh:
+        fh.write(await file.read())
     return {'path': p, 'url': '/api/image?path=' + p.replace('\\', '/')}
 
-app.mount('/', StaticFiles(directory=os.path.join(os.path.dirname(__file__), '..', 'web'), html=True), name='web')
+# server/web 是 webapp 的构建产物 (已 .gitignore): 旧代码无条件 mount, 目录不存在时
+# 模块 import 即抛 RuntimeError → 新克隆 / Docker 镜像 (Dockerfile 不构建前端) 下服务起不来
+WEB_DIR = os.path.join(os.path.dirname(__file__), '..', 'web')
+if os.path.isdir(WEB_DIR):
+    app.mount('/', StaticFiles(directory=WEB_DIR, html=True), name='web')
+else:
+    _log_event('warn', f'web dir missing: {WEB_DIR} (run `npm run build` in webapp/)')

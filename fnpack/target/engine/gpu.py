@@ -54,8 +54,14 @@ def detect_gpu():
                 '飞牛应用中心安装 Nvidia-Driver-560 后: pip install onnxruntime-gpu, 设 PIXLITE_EP=cuda')
     if vendor == '0x1002' or _has_file_any(_amd_rocm_paths):
         has_rocm = _has_file_any(_amd_rocm_paths)
-        return ('amd', 'rocm' if has_rocm else 'cpu', 'onnxruntime-rocm',
-                '飞牛应用中心安装 AMD ROCm 7.2 后: pip install onnxruntime-rocm, 设 PIXLITE_EP=rocm')
+        has_mgx = _has_file_any(['/opt/rocm/bin/migraphx-driver', '/usr/bin/migraphx-driver'])
+        # AMD 现实路径 (2026): onnxruntime 官方 ROCm EP 已在 1.23 移除, 迁移 = MIGraphX EP
+        # AMD 官方 wheel (含 MIGraphX EP): pip install https://repo.radeon.com/rocm/manylinux/rocm-rel-6.4.1/onnxruntime_rocm-1.21.0-cp312-cp312-manylinux_2_28_x86_64.whl
+        # 780M = gfx1103: ROCm 7.1+ 官方支持; 老版本可 HSA_OVERRIDE_GFX_VERSION=11.0.2 兼容跑
+        if has_mgx or has_rocm:
+            return ('amd', 'migraphx', 'onnxruntime-rocm(AMD官方wheel, 见github.com/ROCm/onnxruntime)',
+                    '飞牛应用中心装「AMD MIGraphX」AI 引擎或「AMD ROCm 7.2」; 然后 pip 安装 AMD 官方 onnxruntime_rocm wheel (repo.radeon.com), 设 PIXLITE_EP=migraphx; 780M(gfx1103) 若报不支持, 启动前 export HSA_OVERRIDE_GFX_VERSION=11.0.2')
+        return ('amd', 'cpu', None, '飞牛应用中心装「AMD MIGraphX」AI 引擎后重启应用')
     if vendor == '0x8086':
         return ('intel', 'openvino', 'onnxruntime-openvino',
                 'Intel 核显: pip install onnxruntime-openvino, 设 PIXLITE_EP=openvino')
@@ -66,6 +72,7 @@ def get_providers():
     fixed = {'cpu': ['CPUExecutionProvider'],
              'cuda': ['CUDAExecutionProvider', 'CPUExecutionProvider'],
              'rocm': ['ROCmExecutionProvider', 'CPUExecutionProvider'],
+             'migraphx': ['MIGraphXExecutionProvider', 'CPUExecutionProvider'],
              'dml': ['DmlExecutionProvider', 'CPUExecutionProvider'],
              'openvino': ['OpenVINOExecutionProvider', 'CPUExecutionProvider']}
     if ep in fixed:

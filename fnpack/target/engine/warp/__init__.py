@@ -39,9 +39,7 @@ def mls_rigid_warp(img, src_pts, dst_pts, grid_step=8, alpha=1.0):
     # fill empty grid cells via nearest
     mask0 = mapx == 0
     if mask0.any():
-        ny, nx = np.where(~mask0)
-        if len(ny):
-            from scipy.spatial import cKDTree
+        # (旧代码在此 import scipy.spatial.cKDTree 但从未使用, 而 scipy 不在依赖里 → ImportError)
         # fallback: griddata-free nearest fill
         valid_pts = np.stack([mapx[~mask0], mapy[~mask0]], 1) if (~mask0).any() else None
         yy, xx = np.where(mask0)

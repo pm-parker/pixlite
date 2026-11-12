@@ -28,15 +28,15 @@ def _post(out):
 def enhance_face(bgr, degree=1.0):
     """bgr: full image. degree 0..1 控制混合强度. 返回增强后全图."""
     H, W = bgr.shape[:2]
-    det = cv2.FaceDetectorYN.create(os.path.join(os.path.dirname(__file__), '..', 'perception', 'models',
-                                    'face_detection_yunet_2023mar.onnx'), '', (320, 320), 0.6, 10)
-    det.setInputSize((W, H))
-    n, faces = det.detect(bgr)
-    if faces is None:
+    # 用 perception 层 NMS 检测器: YuNet 对同一张脸会吐多个高重叠框,
+    # 旧逻辑 faces[:6] 全是同一张脸 → GFPGAN 512x512 推理 ×6 = 25s+ (实测单脸 1 次够)
+    from ..perception import get_face_detector
+    faces = get_face_detector()(bgr)
+    if not faces:
         return bgr
     out = bgr.copy()
-    for f in faces[:6]:   # 最多6张脸
-        x, y, w, h = [int(v) for v in f[:4]]
+    for f in faces[:4]:   # NMS 去重后真多脸场景最多处理 4 张
+        x, y, w, h = [int(v) for v in f['box']]
         # 余量 0.6 倍, GFPGAN 对上下文敏感
         mx, my = int(w * 0.6), int(h * 0.6)
         x1, y1 = max(0, x - mx), max(0, y - my)

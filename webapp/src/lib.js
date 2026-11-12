@@ -8,6 +8,7 @@ export const API = {
     const fd = new FormData(); fd.append('file', file)
     return fetch('/api/upload', { method: 'POST', body: fd, headers: _h() }).then(r => r.json())
   },
+  filterThumbUrl: (fid) => `/api/filter-thumb/${encodeURIComponent(fid)}${apiKey() ? '?key=' + apiKey() : ''}`,
   imageUrl: (absPath) => `/api/image?path=${encodeURIComponent(absPath)}${apiKey() ? '&key=' + apiKey() : ''}`,
   async retouch(file, preset, overrides, routing, person) {
     const fd = new FormData()
@@ -41,7 +42,7 @@ export const API = {
     fd.append('src_dir', srcDir); fd.append('preset', preset)
     if (dstDir) fd.append('dst_dir', dstDir)
     fd.append('recursive', recursive); fd.append('workers', workers)
-    return fetch('/api/batch', { method: 'POST', body: fd }).then(r => r.json())
+    return fetch('/api/batch', { method: 'POST', body: fd, headers: _h() }).then(r => r.json())
   },
   batchStatus: (id) => fetch(`/api/batch/${id}`, { headers: _h() }).then(r => r.json()),
 }

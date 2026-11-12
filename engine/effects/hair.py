@@ -14,6 +14,7 @@ def hair_recolor(bgr, parsing, hue=0, sat=0, light=0):
     hsv = cv2.cvtColor(bgr, cv2.COLOR_BGR2HSV).astype(np.float32)
     sel = m > 128
     hsv[..., 0][sel] += hue / 100.0 * 20
+    hsv[..., 0] = np.mod(hsv[..., 0], 180)   # 色相环绕 (旧代码负色相被 clip 成 0=红, 超 179 非法)
     hsv[..., 1][sel] *= (1 + sat / 100.0 * 0.5)
     hsv[..., 2][sel] *= (1 + light / 100.0 * 0.35)
     out = cv2.cvtColor(np.clip(hsv, 0, 255).astype(np.uint8), cv2.COLOR_HSV2BGR)

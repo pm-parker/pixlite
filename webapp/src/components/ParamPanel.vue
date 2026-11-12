@@ -5,7 +5,7 @@
    调色 = 17 纵向子 tab + EXIF 条 + 多图色彩统一 */
 import { ref, reactive, watch, onMounted, computed } from 'vue'
 import { BEAUTY_TABS, RIGHT_PANEL_SECTIONS, COLOR_SUBTABS,
-         HSL_BANDS, WB_PRESETS, defaultOverrides } from '../lib.js'
+         HSL_BANDS, WB_PRESETS, defaultOverrides, API, _h } from '../lib.js'
 import PxIcon from './PxIcon.vue'
 
 const props = defineProps({
@@ -94,7 +94,7 @@ function pickProfile(id) { setVal('color.profile', id) }
 const filters = ref([])
 onMounted(async () => {
   try {
-    filters.value = await fetch('/api/filters').then(r => r.json())
+    filters.value = await fetch('/api/filters', { headers: _h() }).then(r => r.json())
   } catch (e) { filters.value = [] }
 })
 
@@ -102,7 +102,7 @@ onMounted(async () => {
 const makeupSuits = ref([])
 onMounted(async () => {
   try {
-    makeupSuits.value = await fetch('/api/makeup_suits').then(r => r.json())
+    makeupSuits.value = await fetch('/api/makeup_suits', { headers: _h() }).then(r => r.json())
   } catch (e) { makeupSuits.value = [] }
 })
 const suitOpen = computed(() => val('makeup_suit.suit_id', '') !== '')
@@ -281,7 +281,7 @@ async function onRefFile(ev) {
   if (!f) return
   const fd = new FormData(); fd.append('file', f, f.name)
   try {
-    const r = await fetch('/api/ref', { method: 'POST', body: fd }).then(r => r.json())
+    const r = await fetch('/api/ref', { method: 'POST', body: fd, headers: _h() }).then(r => r.json())
     refInfo.value = r
     setVal('color_match.ref_path', r.path)
   } catch (e) { /* noop */ }
@@ -504,7 +504,7 @@ function resetAll() {
                         <div v-for="f in shownFilters" :key="f.id" class="pm-lut"
                              :class="{ on: val('lut.filter','') === f.id }" @click="pickFilter(f)"
                              :title="f.name_cn || f.id">
-                          <img :src="'/api/filter-thumb/' + f.id" loading="lazy" />
+                          <img :src="API.filterThumbUrl(f.id)" loading="lazy" />
                           <span class="pm-lut-name">{{ f.name_cn || f.id }}</span>
                         </div>
                       </div>

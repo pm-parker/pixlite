@@ -129,8 +129,9 @@ def teeth_fix(bgr, parsing, faces, degree=0.5):
     spot = teeth & (dev > 8)
     if not spot.any():
         return bgr
-    bgr = bgr.astype(np.float32)
-    for c in range(3):
-        medc = cv2.medianBlur(bgr[..., c].astype(np.uint8), 7).astype(np.float32)
-        bgr[..., c] = bgr[..., c] * (1 - d) + medc * d
-    return np.clip(bgr, 0, 255).astype(np.uint8)
+    # BUGFIX: 旧代码把中值滤波按 d 混合到 *整张图* (spot 只用于判断是否执行),
+    # 牙齿祛瑕疵会把全图糊掉。只在瑕疵点 (羽化) 处替换。
+    med = np.stack([cv2.medianBlur(bgr[..., c], 7) for c in range(3)], -1).astype(np.float32)
+    w = (cv2.GaussianBlur(spot.astype(np.float32), (0, 0), 1.0) * d)[..., None]
+    out = bgr.astype(np.float32) * (1 - w) + med * w
+    return np.clip(out, 0, 255).astype(np.uint8)

@@ -14,17 +14,47 @@ def _skin_mask(ctx, bgr):
     """Soft skin mask at bgr resolution (None if unavailable). Uses perception
     mask_of (handles label-map parsing + resize)."""
     try:
-        from .perception import mask_of
-        par = ctx.get('parsing')
-        if par is None:
-            parser = P.get_skin_parser()
-            par = ctx['parsing'] = parser(bgr)
-        m = mask_of(par, 'skin', dilate=2)
+        # 原为 `from .perception import mask_of` (engine.pipeline.perception 不存在),
+        # ImportError 被下方 except 吞掉 → 永远返回 None → skin_tone 美白/提亮作用到
+        # 整张图 (背景/衣服一起变色), 肤色统一 (unify) 永远不执行。
+        from ..perception import mask_of
+        m = mask_of(_parsing(ctx, bgr), 'skin', dilate=2)
         if m.shape[:2] != bgr.shape[:2]:
             m = cv2.resize(m, (bgr.shape[1], bgr.shape[0]), interpolation=cv2.INTER_NEAREST)
         return m
     except Exception:
         return None
+
+def _parsing(ctx, bgr):
+    """Lazy face-parsing: 预设缺 face_parsing 节点、或通过 overrides 追加了依赖
+    parsing 的新节点时, 原代码直接 ctx['parsing'] KeyError 导致整单失败。"""
+    par = ctx.get('parsing')
+    if par is None or par.shape[:2] != bgr.shape[:2]:
+        par = ctx['parsing'] = P.get_skin_parser()(bgr)
+    return par
+
+
+class _LazyCtx(dict):
+    """ctx['parsing'] 缺失时按当前图像惰性计算 (见 _parsing)。"""
+    def __init__(self):
+        super().__init__()
+        self.cur = None
+
+    def __missing__(self, key):
+        if key == 'parsing' and self.cur is not None:
+            return _parsing(self, self.cur)
+        if key == 'faces':
+            return []
+        raise KeyError(key)
+
+
+# 不依赖人脸的全局节点: 无人脸时仍执行 (原列表漏了天空/画质类, 纯风景照
+# 上天空替换/增强、画质修复全部被静默跳过)
+GLOBAL_OPS = {'tone', 'hsl', 'lut', 'white_balance', 'grain', 'curves',
+              'levels', 'color_grading', 'selective_color', 'color_editor',
+              'ai_calibrate', 'color_match', 'raw_develop', 'face_detect',
+              'face_parsing', 'sky_replace', 'sky_enhance', 'quality_enhance'}
+
 
 class Pipeline:
     def __init__(self, preset_path):
@@ -38,8 +68,8 @@ class Pipeline:
 
     def run(self, bgr, progress_cb=None):
         preset = self.preset
-        ctx = {}
-        nodes = preset['nodes']
+        ctx = _LazyCtx()
+        nodes = preset.get('nodes') or []
         factors = preset.get('population_factors', {})
         pop = 'adult'
         total = len(nodes)
@@ -54,17 +84,11 @@ class Pipeline:
                         if base_ == op and sub_:
                             pr[sub_] = max(pr.get(sub_, 0), v2)
             self._apply_factors(op, pr, factors, pop)
-            GLOBAL_OPS = {'tone', 'hsl', 'lut', 'white_balance', 'grain', 'curves',
-                          'levels', 'color_grading', 'selective_color', 'color_editor',
-                          'ai_calibrate', 'color_match', 'raw_develop', 'face_detect',
-                          'face_parsing'}
+            ctx.cur = bgr
             if ctx.get('no_face') and op not in GLOBAL_OPS:
                 continue
             if node.get('mask'):   # F5 局部调色: op restricted to mask region
-                if 'parsing' not in ctx:
-                    parser = P.get_skin_parser()
-                    ctx['parsing'] = parser(bgr)
-                mk = CM.build_mask(ctx['parsing'], node['mask'],
+                mk = CM.build_mask(_parsing(ctx, bgr), node['mask'],
                                    feather=node.get('feather', 25))
                 def _run_one(img, _n={'op': op, 'params': pr}):
                     p2 = Pipeline.__new__(Pipeline)
@@ -241,7 +265,12 @@ class Pipeline:
                 rouge  = float(pr.get('rouge') or 0)
                 unify  = max(float(pr.get('unify_face') or 0), float(pr.get('unify_body') or 0))
                 if bright or whiten or rouge or unify:
+                    # BUGFIX: OpenCV 8-bit LAB 的 a/b 通道是 0..255 (128=中性), 旧代码按
+                    # 有符号 -128..127 处理: 末尾 clip 把 a/b>127 (所有偏暖/偏红像素,
+                    # 即全部肤色) 截成中性灰, 美白的 *= 也以 0 而非 128 为中心缩放。
+                    # 这里转成以 0 为中心的有符号色度再计算。
                     lab = cv2.cvtColor(bgr, cv2.COLOR_BGR2LAB).astype(np.float32)
+                    lab[..., 1:] -= 128.0
                     skin = _skin_mask(ctx, bgr)
                     L = lab[..., 0]
                     if bright:
@@ -261,9 +290,9 @@ class Pipeline:
                             lab[..., 1] = lab[..., 1] * (1 - w) + ma * w
                             lab[..., 2] = lab[..., 2] * (1 - w) + mb * w
                     lab[..., 0] = np.clip(L, 0, 255)
-                    lab[..., 1] = np.clip(lab[..., 1], -128, 127)
-                    lab[..., 2] = np.clip(lab[..., 2], -128, 127)
-                    adj = cv2.cvtColor(lab.astype(np.uint8), cv2.COLOR_LAB2BGR)
+                    lab[..., 1] = np.clip(lab[..., 1] + 128.0, 0, 255)
+                    lab[..., 2] = np.clip(lab[..., 2] + 128.0, 0, 255)
+                    adj = cv2.cvtColor(np.round(lab).astype(np.uint8), cv2.COLOR_LAB2BGR)
                     if skin is not None:
                         m = (skin.astype(np.float32) / 255.0)[..., None]
                         bgr = (adj * m + bgr * (1 - m)).astype(np.uint8)
@@ -278,7 +307,7 @@ class Pipeline:
             elif op == 'grain':
                 bgr = E.grain(bgr, pr.get('density', .1), pr.get('luminance', .29))
             elif op == 'liquify_auto':
-                bgr = self._auto_liquify(bgr, ctx['faces'], pr.get('profile', 'light'))
+                bgr = self._auto_liquify(bgr, ctx.get('faces') or [], pr.get('profile', 'light'))
             elif op == 'facesurgery':
                 bgr = FS.apply_head_narrow(bgr, ctx.get('faces', []),
                                            degree=pr.get('degree', 50),
@@ -286,9 +315,11 @@ class Pipeline:
                                            yaw=pr.get('yaw', 'normal'))
             elif op == 'color_match':
                 ref = pr.get('ref_image')
-                ref_img = cv2.imread(ref) if ref else None
+                ref_img = None
+                if ref and os.path.isfile(ref):   # np.fromfile: Windows 中文路径安全
+                    ref_img = cv2.imdecode(np.fromfile(ref, dtype=np.uint8), cv2.IMREAD_COLOR)
                 mask = None
-                if 'parsing' in ctx:
+                if dict.get(ctx, 'parsing') is not None:
                     from ..perception import mask_of
                     mask = mask_of(ctx['parsing'], 'skin')
                 if ref_img is not None:

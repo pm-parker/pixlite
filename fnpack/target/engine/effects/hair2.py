@@ -83,7 +83,8 @@ def _volume_side(bgr, m, parsing, d, side):
     ys, xs = np.where(m > 128)
     if len(xs) == 0:
         return bgr
-    face_cx = w / 2  # refined by caller box; hair centroid is a decent proxy
+    # 旧代码固定用图像中线 w/2: 人物不居中时左右判反/整片头发被推向一侧。按注释意图用发区质心
+    face_cx = float(xs.mean())
     band = cv2.subtract(cv2.dilate(m, np.ones((25, 25), np.uint8)),
                         cv2.erode(m, np.ones((5, 5), np.uint8)))
     if side == 'l':

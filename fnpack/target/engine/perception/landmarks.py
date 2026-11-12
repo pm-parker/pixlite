@@ -50,9 +50,16 @@ def get_landmarks(bgr, face_box):
     sc = 256.0 / side
     M = np.float32([[sc, 0, -x0 * sc], [0, sc, -y0 * sc]])
     crop = cv2.warpAffine(bgr, M, (256, 256), borderMode=cv2.BORDER_REPLICATE)
-    inp = (crop[..., ::-1].astype(np.float32) / 127.5 - 1.0)[None]
+    inp = (crop[..., ::-1].astype(np.float32) / 127.5 - 1.0)[None]   # NHWC
     s = _sess()
-    out = s.run(None, {s.get_inputs()[0].name: inp})[0]
+    meta = s.get_inputs()[0]
+    # tools/download_models.py 下载的公开 ONNX 版输入是 NCHW (Nx3x256x256),
+    # 参考构建的转换版是 NHWC; 按模型声明的输入形状自适应。否则 NCHW 模型直接抛
+    # INVALID_ARGUMENT, 被 attach_mesh 静默吞掉, 所有依赖 478 点的效果全部失效。
+    shp = meta.shape
+    if len(shp) == 4 and shp[1] == 3:
+        inp = np.ascontiguousarray(inp.transpose(0, 3, 1, 2))
+    out = s.run(None, {meta.name: inp})[0]
     pts = out.reshape(478, 3)[:, :2]
     p = pts / np.float32([sc, sc]) + np.float32([x0, y0])
     # sanity: mesh must land near the face box
