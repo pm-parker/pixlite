@@ -2,7 +2,8 @@
 #
 # 触发:
 #   - push 到 main / PR: 跑测试 + 打包, .fpk 作为 Actions artifact (保留 30 天)
-#   - push tag v*.*.* (如 v0.1.12): 用 tag 号作为版本, 并发布到 GitHub Release
+#   - push tag v*.*.* (如 v0.1.12 / v0.1.12-beta.1): 用 tag 号作为版本, 并发布到 GitHub Release;
+#     带 -beta / -rc 等后缀的 tag 发布为预发布 (prerelease)
 #   - 手动 (Actions → Build fnOS package → Run workflow): 可选是否内置模型
 #
 # 产物:
@@ -172,6 +173,10 @@ jobs:
     permissions:
       contents: write
     steps:
+      - uses: actions/checkout@v7
+        with:
+          sparse-checkout: RELEASE_NOTES.md
+          sparse-checkout-cone-mode: false
       - uses: actions/download-artifact@v8
         with:
           pattern: fpk-*
@@ -183,15 +188,18 @@ jobs:
         run: |
           ls -la dist
           tag="${GITHUB_REF#refs/tags/}"
+          pre=""
+          case "$tag" in *-*) pre="--prerelease";; esac
           notes="飞牛 fnOS 安装包 (自动构建 ${GITHUB_SHA::7})
 
-          - \`*_full.fpk\`：内置全部 AI 模型，离线可用
-          - 其他 \`.fpk\`：精简包，安装后在 NAS 上执行 \`python tools/download_models.py\` 下载模型
+          - \`*_full.fpk\`：内置全部 AI 模型，NAS 不能联网时选这个
+          - 其他 \`.fpk\`：精简包，首次启动后自动下载模型，无需手动操作
 
-          安装：飞牛应用中心 → 手动安装 → 选择 .fpk；或 SSH 执行 \`appcenter-cli install-fpk <file>.fpk\`。"
+          安装：先在应用中心安装 python312，再在应用中心 → 手动安装 → 选择 .fpk。"
           # GitHub Release 单文件上限 2GiB
           if gh release view "$tag" -R "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
             gh release upload "$tag" dist/* --clobber -R "$GITHUB_REPOSITORY"
           else
-            gh release create "$tag" dist/* -R "$GITHUB_REPOSITORY" --title "PixLite $tag" --notes "$notes"
+            if [ -f RELEASE_NOTES.md ]; then notes="$(cat RELEASE_NOTES.md)"; fi
+            gh release create "$tag" dist/* -R "$GITHUB_REPOSITORY" --title "PixLite $tag" $pre --notes "$notes"
           fi

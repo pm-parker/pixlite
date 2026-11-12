@@ -106,8 +106,9 @@ def main():
     ap.add_argument('--fnpack', default='')
     ap.add_argument('--out', default=os.path.join(SRC, 'dist'))
     a = ap.parse_args()
-    if a.version and not re.match(r'^\d+\.\d+\.\d+$', a.version):
-        die(f'--version 需为 X.Y.Z, 实际: {a.version}')
+    # fnOS manifest 允许 "2.1.3-beta" 这类预发布后缀 (developer.fnnas.com/docs/core-concepts/manifest)
+    if a.version and not re.match(r'^\d+\.\d+\.\d+(-[0-9A-Za-z][0-9A-Za-z.]*)?$', a.version):
+        die(f'--version 需为 X.Y.Z 或 X.Y.Z-beta.N, 实际: {a.version}')
 
     build_web(a.skip_web)
     if a.with_models:

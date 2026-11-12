@@ -12,7 +12,22 @@ from engine.batch import BatchJob, collect_images
 LUT_DIR = os.environ.get('PIXLITE_LUT_DIR') or os.path.abspath(os.path.join(
     os.path.dirname(__file__), '..', '..', '..', 'pixcake-reverse', 'effect_config_decrypted', 'Filters'))
 
-app = FastAPI(title='PixLite')
+def _app_version():
+    """fnOS 注入 TRIM_APPVER; 其他环境读 fnpack/manifest 的 version。"""
+    v = os.environ.get('TRIM_APPVER') or os.environ.get('PIXLITE_VERSION')
+    if v:
+        return v
+    try:
+        mf = os.path.join(os.path.dirname(__file__), '..', '..', 'fnpack', 'manifest')
+        for line in open(mf, encoding='utf-8'):
+            if line.split('=')[0].strip() == 'version':
+                return line.split('=', 1)[1].strip()
+    except OSError:
+        pass
+    return 'dev'
+
+APP_VERSION = _app_version()
+app = FastAPI(title='PixLite', version=APP_VERSION)
 
 # ---- 鉴权 (Issue #1): fail closed ----
 # - 设 PIXLITE_TOKEN 后, 非回环请求必须带正确的 X-API-Key。
@@ -121,7 +136,7 @@ def health(request: Request):
         mode = 'token'
     else:
         mode = 'open' if ALLOW_NO_TOKEN else 'disabled'
-    return {'ok': True, 'auth': mode}
+    return {'ok': True, 'auth': mode, 'version': APP_VERSION}
 
 
 @app.get('/api/auth/info')
@@ -155,7 +170,7 @@ def debug_report(frontend_events: str = ''):
         gpu = {'error': str(e)}
     report = {
         'generated_at': _t.strftime('%Y-%m-%d %H:%M:%S'),
-        'app': 'PixLite 0.1.0',
+        'app': f'PixLite {APP_VERSION}',
         'python': sys.version.split()[0],
         'os': platform.platform(),
         'gpu': gpu,
