@@ -1,14 +1,21 @@
 """DAG pipeline executor — aligned with PixCake CraftFormula + effect.json semantics.
 Executes preset JSON (see presets/wedding_basic.json) with population factors."""
-import numpy as np, cv2, json, os
-from .. import perception as P
-from .. import effects as E
-from .. import warp as W
-from ..warp import facesurgery as FS
+import contextlib
+import json
+import os
+
+import cv2
+import numpy as np
+
 from .. import color as C
+from .. import effects as E
+from .. import perception as P
+from .. import warp as W
 from ..color import advanced as CA
 from ..color import masks as CM
 from ..perception import landmarks as LM
+from ..warp import facesurgery as FS
+
 
 def _skin_mask(ctx, bgr):
     """Soft skin mask at bgr resolution (None if unavailable). Uses perception
@@ -24,10 +31,8 @@ def _skin_mask(ctx, bgr):
         return m
     except Exception as e:
         # 不再静默: 记录原因, 调用方按 fail-closed 跳过局部效果 (Issue #6)
-        try:
+        with contextlib.suppress(Exception):
             ctx.setdefault('warnings', []).append(f'skin mask unavailable: {type(e).__name__}: {e}'[:200])
-        except Exception:
-            pass
         return None
 
 def _parsing(ctx, bgr):
@@ -53,6 +58,15 @@ class _LazyCtx(dict):
         raise KeyError(key)
 
 
+def _make_masked_runner(op, pr):
+    """F5 局部调色: 生成只执行单个节点的回调。绑定当前 op/参数, 避免循环内
+    闭包共享变量 (B023) 与可变默认参数 (B006)。"""
+    def _run_one(img):
+        p2 = Pipeline.__new__(Pipeline)
+        p2.preset = {'nodes': [{'op': op, 'params': pr}]}
+        return p2.run(img)
+    return _run_one
+
 # 不依赖人脸的全局节点: 无人脸时仍执行 (原列表漏了天空/画质类, 纯风景照
 # 上天空替换/增强、画质修复全部被静默跳过)
 GLOBAL_OPS = {'tone', 'hsl', 'lut', 'white_balance', 'grain', 'curves',
@@ -63,13 +77,14 @@ GLOBAL_OPS = {'tone', 'hsl', 'lut', 'white_balance', 'grain', 'curves',
 
 class Pipeline:
     def __init__(self, preset_path):
-        self.preset = json.load(open(preset_path, encoding='utf-8'))
+        with open(preset_path, encoding='utf-8') as fh:
+            self.preset = json.load(fh)
 
     def detect_population(self, faces):
         """Aligned: Male/Female/Child/Older degree factors. Heuristic via face size ratio."""
         return 'adult'
 
-    
+
 
     def run(self, bgr, progress_cb=None):
         preset = self.preset
@@ -79,7 +94,8 @@ class Pipeline:
         pop = 'adult'
         total = len(nodes)
         for i, node in enumerate(nodes):
-            op = node['op']; pr = dict(node.get('params', {}))
+            op = node['op']
+            pr = dict(node.get('params', {}))
             rt = preset.get('routing')
             if rt and op != 'face_detect':
                 g = rt.get(pop)
@@ -95,11 +111,7 @@ class Pipeline:
             if node.get('mask'):   # F5 局部调色: op restricted to mask region
                 mk = CM.build_mask(_parsing(ctx, bgr), node['mask'],
                                    feather=node.get('feather', 25))
-                def _run_one(img, _n={'op': op, 'params': pr}):
-                    p2 = Pipeline.__new__(Pipeline)
-                    p2.preset = {'nodes': [_n]}
-                    return p2.run(img)
-                bgr = CM.apply_masked(bgr, _run_one, mk)
+                bgr = CM.apply_masked(bgr, _make_masked_runner(op, pr), mk)
                 if progress_cb:
                     progress_cb((i + 1) / total)
                 continue
@@ -108,10 +120,9 @@ class Pipeline:
                 ctx['faces'] = det(bgr)
                 if not ctx['faces']:
                     ctx['no_face'] = True  # portrait ops skip; global color ops continue
-                try:
+                # mesh optional; ops fall back to no-op
+                with contextlib.suppress(Exception):
                     LM.attach_mesh(bgr, ctx['faces'])
-                except Exception:
-                    pass  # mesh optional; ops fall back to no-op
                 # 自动人群识别 (insightface genderage, 96x96 RGB)
                 # Issue #9: 旧代码只识别第一张脸并把结果复制给所有人。现在逐脸识别并写入
                 # 各自的 face['person']; 全图级 routing/人群系数只有在所有已识别人脸属于
@@ -211,7 +222,9 @@ class Pipeline:
             elif op == 'antiglare':
                 bgr = E.eyes.glasses_antiglare(bgr, ctx['parsing'], pr.get('degree', .5))
             elif op == 'catchlight':
-                bgr = E.eyes.catchlight(bgr, ctx['parsing'], ctx.get('faces'), max(pr.get('degree', 0) or 0, pr.get('degree_l', 0) or 0, pr.get('degree_r', 0) or 0) or .5)
+                deg = max(pr.get('degree', 0) or 0, pr.get('degree_l', 0) or 0,
+                          pr.get('degree_r', 0) or 0)
+                bgr = E.eyes.catchlight(bgr, ctx['parsing'], ctx.get('faces'), deg or .5)
             elif op == 'smile_manage':
                 bgr = E.teeth.smile_manage(bgr, ctx.get('faces'), int(pr.get('level', 3)))
             elif op == 'gum_fix_l':
@@ -293,7 +306,7 @@ class Pipeline:
                         L = L * (1 + 0.04 * whiten)
                         lab[..., 1] *= (1 - 0.15 * whiten)
                         lab[..., 2] *= (1 - 0.10 * whiten)
-                    if rouge:   # 红润: a+ 
+                    if rouge:   # 红润: a+
                         lab[..., 1] = np.clip(lab[..., 1] + 12 * rouge, -128, 127)
                     if unify and skin is not None:   # 肤色统一: 向皮肤均值收缩 a/b
                         sel = skin > 128
@@ -387,7 +400,8 @@ class Pipeline:
                 adj = {}
                 for k, v in pr.items():
                     if k == 'adjustments' and isinstance(v, dict):
-                        adj.update(v); continue
+                        adj.update(v)
+                        continue
                     if '.' in k:
                         c, f = k.split('.', 1)
                         adj.setdefault(c, {})[f] = v

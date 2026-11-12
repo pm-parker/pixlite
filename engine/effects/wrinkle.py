@@ -1,7 +1,9 @@
 """Wrinkle smoothing — 纹路平滑 + 祛双下巴 (B-group local CV).
 Directional low-pass on oriented line-type masks (generated procedurally from
 parsing landmarks), and double-chin shadow reshaping via jaw-shadow gradient."""
-import numpy as np, cv2
+import cv2
+import numpy as np
+
 from ..perception import mask_of
 
 REGIONS = {
@@ -50,7 +52,7 @@ def region_mask(parsing, faces, region):
     blank = np.zeros((h, w), np.uint8)
     if region == 'forehead':
         brows = cv2.bitwise_or(mask_of(parsing, 'brow_l', dilate=2), mask_of(parsing, 'brow_r', dilate=2))
-        ys, xs = np.where(brows > 128)
+        ys, _xs = np.where(brows > 128)
         y1 = int(ys.max()) if len(ys) else int(y + fh * 0.30)
         skin = mask_of(parsing, 'skin', dilate=1)
         band = np.zeros_like(blank)
@@ -86,7 +88,7 @@ def region_mask(parsing, faces, region):
     part = _part_mask(parsing, faces, anchor)
     if part.max() == 0:
         return blank
-    ys, xs = np.where(part > 128)
+    ys, _xs = np.where(part > 128)
     yc = int(ys.mean())
     band = np.zeros_like(blank)
     dyy = int(fh * (dyf or 0))

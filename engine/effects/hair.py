@@ -2,7 +2,9 @@
 Hue/sat shift inside hair mask; flyaway = high-frequency strands at hair
 boundary suppressed by inward median inpainting; white-hair = bright
 low-sat hair pixels remapped toward dominant hair color."""
-import numpy as np, cv2
+import cv2
+import numpy as np
+
 from ..perception import mask_of
 
 

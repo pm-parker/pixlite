@@ -1,10 +1,30 @@
 """Effects layer — aligned with PixCake MagicEngine + TSAI pipelines.
 Core retouch ops implemented with OpenCV (CPU) mirroring extracted GLSL semantics."""
-import numpy as np, cv2
-from ..perception import mask_of, CLS
-from . import blemish, region_fix, wrinkle, hair
-from . import eyes, teeth, makeup, hair2, body
-from ..perception import landmarks as LM
+import contextlib
+
+import cv2
+import numpy as np
+
+from ..perception import mask_of
+
+# 子模块延迟导入: engine/perception 的 onnxruntime 缺失时, effects 包仍可加载
+# (cv2-only 特效 skin_retouch/teeth_whiten/eye_brighten 等不受影响);
+# 子模块经由本包命名空间暴露 (engine.effects.teeth / .blemish ...), 供
+# pipeline 按需 getattr —— 见 pipeline/__init__.py 的节点分发。
+try:
+    from .. import perception
+except ImportError:
+    perception = None  # type: ignore[assignment]
+with contextlib.suppress(ImportError):
+    from . import blemish, body, eyes, hair, hair2, makeup, region_fix, teeth, wrinkle
+
+# pipeline 经 E.<submodule> 属性访问 (见 pipeline/__init__.py 节点分发),
+# __all__ 向 linter 声明这些再导出是有意为之。
+__all__ = [
+    "blemish", "body", "eyes", "hair", "hair2", "makeup",
+    "perception", "region_fix", "teeth", "wrinkle",
+]
+
 
 def skin_retouch(bgr, parsing, strength=0.6, texture_keep=0.35):
     """Aligned: FaceDermabrasionHLF / SkinRetune. GLSL ref: SkinAdjustV2.frag.
@@ -60,7 +80,7 @@ def skin_tone_hsl(bgr, parsing, hsl, preset='nuanhuaipi'):
     hsl = (list(hsl) + [0] * 24)[:24]
     h = hsl[0:8]
     s = hsl[8:16]
-    l = hsl[16:24]
+    lum = hsl[16:24]
     hsv = cv2.cvtColor(bgr, cv2.COLOR_BGR2HSV).astype(np.float32)
     skin = (mask_of(parsing, 'skin', dilate=2) > 128)
     hh = hsv[..., 0].astype(int)  # 0-179
@@ -69,7 +89,7 @@ def skin_tone_hsl(bgr, parsing, hsl, preset='nuanhuaipi'):
         band = (hh >= i * 22) & (hh < ((i + 1) * 22 if i < 7 else 180)) & skin
         hsv[..., 0][band] += h[i]
         hsv[..., 1][band] += s[i] * 2.55
-        hsv[..., 2][band] += l[i] * 2.55
+        hsv[..., 2][band] += lum[i] * 2.55
     # 色相是环形 0..179: 旧代码直接 clip 到 0..255, 超过 179 的值被 OpenCV 当非法色相
     hsv[..., 0] = np.mod(hsv[..., 0], 180)
     out = cv2.cvtColor(np.clip(hsv, 0, 255).astype(np.uint8), cv2.COLOR_HSV2BGR)

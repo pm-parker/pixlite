@@ -8,7 +8,13 @@
 Usage:
     python -m server.run [--host 0.0.0.0] [--port 8300] [--uds /path/app.sock]
 """
-import argparse, os, signal, socket, stat, sys
+import argparse
+import contextlib
+import os
+import signal
+import socket
+import stat
+import sys
 
 import uvicorn
 
@@ -59,10 +65,8 @@ def main(argv=None):
         uvicorn.Server(cfg).run(sockets=socks)
     finally:
         if a.uds and os.path.exists(a.uds):
-            try:
+            with contextlib.suppress(OSError):
                 os.unlink(a.uds)
-            except OSError:
-                pass
 
 
 if __name__ == '__main__':

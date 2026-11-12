@@ -35,7 +35,6 @@ def get_alpha(bgr, ref_side=512):
 
 def blur_bg(bgr, strength=0.7):
     """背景景深虚化. strength 0..1 控制虚化量."""
-    H, W = bgr.shape[:2]
     alpha = get_alpha(bgr)[..., None]
     k = max(int(3 + strength * 40), 3) | 1  # 奇数
     blurred = cv2.GaussianBlur(bgr, (k, k), 0)

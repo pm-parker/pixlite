@@ -1,9 +1,13 @@
 """GFPEnhance — GFPGAN 1.4 ONNX face restoration (开源效果层, 对标像素蛋糕磨皮质感).
 流程: 人脸检测(yunet) → 512x512 裁剪(带余量) → GFPGAN → 回贴(羽化融合)
 degree 由滑杆控制回贴强度 (原脸与增强脸的 alpha 混合)."""
+
+import cv2
+import numpy as np
+import onnxruntime as ort
+
 from ..gpu import make_session
 from ..perception.model_store import model_path as _model_path
-import os, cv2, numpy as np, onnxruntime as ort
 
 MODEL_NAME = 'gfpgan_1.4.onnx'   # resolved via model_store (bundled dir or PIXLITE_MODELS_DIR)
 _cache = {}

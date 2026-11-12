@@ -83,7 +83,7 @@ def faces_exist(bgr, parsing):
 
 def _volume_side(bgr, m, parsing, d, side):
     h, w = bgr.shape[:2]
-    ys, xs = np.where(m > 128)
+    _ys, xs = np.where(m > 128)
     if len(xs) == 0:
         return bgr
     # 旧代码固定用图像中线 w/2: 人物不居中时左右判反/整片头发被推向一侧。按注释意图用发区质心

@@ -1,7 +1,10 @@
 """F5: Local color masks — PixCake 局部调色 (主体/背景/皮肤/天空/头发).
 Masks from existing SegFormer 19-class parsing; sky approximated by upper-gradient when no sky class."""
-import numpy as np, cv2
+import cv2
+import numpy as np
+
 from ..perception import mask_of
+
 
 def build_mask(parsing, kind, feather=25):
     """kind: subject|background|skin|hair|sky|face. Returns float32 0..1 HxW."""
@@ -25,8 +28,6 @@ def build_mask(parsing, kind, feather=25):
         # SegFormer face-parsing has no sky class; approximate: bg pixels in
         # upper region weighted by vertical gradient (sky is brighter/bluer at top).
         bg = (parsing == 0).astype(np.float32)
-        gray = cv2.cvtColor(cv2.cvtColor((bg * 255).astype(np.uint8), cv2.COLOR_GRAY2BGR),
-                            cv2.COLOR_BGR2GRAY).astype(np.float32) / 255.0
         yy = np.linspace(1, 0, h)[:, None] * np.ones((1, w))  # top=1
         # blue dominance of original needed; use luminance-free vertical weight on bg
         m = (bg * (yy ** 1.5) * 255).astype(np.uint8)

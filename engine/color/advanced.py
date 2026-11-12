@@ -1,6 +1,8 @@
 """Advanced color ops — F6: curves / levels / color_grading / selective_color / color_editor.
 Aligned with PixCake color panel tabs (曲线/色阶/颜色分级/可选颜色/色彩编辑器)."""
-import numpy as np, cv2
+import cv2
+import numpy as np
+
 
 # ---------- F6.1 Curves ----------
 def _interp_lut(points):
@@ -13,9 +15,11 @@ def _interp_lut(points):
             ded.append(p)
     if len(ded) < 2:
         return np.clip(np.arange(256), 0, 255).astype(np.uint8)
-    x = np.array([p[0] for p in ded]); y = np.array([p[1] for p in ded])
+    x = np.array([p[0] for p in ded])
+    y = np.array([p[1] for p in ded])
     n = len(x)
-    dx = np.diff(x); dy = np.diff(y)
+    dx = np.diff(x)
+    dy = np.diff(y)
     slope = np.zeros(n)
     slope[1:-1] = np.where(dx[:-1] * dx[1:] > 0,
                            (dy[:-1] / dx[:-1] + dy[1:] / dx[1:]) / 2, 0)
@@ -54,8 +58,7 @@ def curves(bgr, rgb=None, r=None, g=None, b=None):
     rgb = rgb or IDENT
     lutm = _interp_lut(rgb)
     out = cv2.LUT(bgr, lutm)  # apply master to all channels
-    lutp = {}
-    for name, pts, ch in (('r', r, 2), ('g', g, 1), ('b', b, 0)):
+    for _name, pts, ch in (('r', r, 2), ('g', g, 1), ('b', b, 0)):  # name 仅表通道顺序, 未用
         if pts:
             lut = _interp_lut(pts)
             c = cv2.LUT(out[..., ch], lut)
@@ -77,17 +80,19 @@ def levels(bgr, in_black=0, in_white=255, gamma=1.0, out_black=0, out_white=255)
 # ---------- F6.3 Color Grading (Lift-Gamma-Gain, shadow/mid/high wheels) ----------
 def _zone_weights(lab_l):
     """Three luminance zone weights (normalized to sum 1) from L channel float 0..255."""
-    l = lab_l.astype(np.float32) / 255.0
-    ws = np.exp(-((l - 0.15) ** 2) / 0.045)   # shadows
-    wm = np.exp(-((l - 0.50) ** 2) / 0.08)    # midtones
-    wh = np.exp(-((l - 0.90) ** 2) / 0.045)   # highlights
+    lum = lab_l.astype(np.float32) / 255.0
+    ws = np.exp(-((lum - 0.15) ** 2) / 0.045)   # shadows
+    wm = np.exp(-((lum - 0.50) ** 2) / 0.08)    # midtones
+    wh = np.exp(-((lum - 0.90) ** 2) / 0.045)   # highlights
     s = ws + wm + wh + 1e-6
     return ws / s, wm / s, wh / s
 
 def color_grading(bgr, shadow=None, mid=None, high=None):
     """Each zone: {h: -180..180 hue shift, s: -100..100 sat, l: -100..100 light}.
     Hue/sat done in LAB a/b space (hue≈rotate a,b; sat≈scale a,b)."""
-    shadow = shadow or {}; mid = mid or {}; high = high or {}
+    shadow = shadow or {}
+    mid = mid or {}
+    high = high or {}
     lab = cv2.cvtColor(bgr, cv2.COLOR_BGR2LAB).astype(np.float32)
     ws, wm, wh = _zone_weights(lab[..., 0])
     zones = [(shadow, ws), (mid, wm), (high, wh)]
@@ -95,8 +100,10 @@ def color_grading(bgr, shadow=None, mid=None, high=None):
     b = lab[..., 2] - 128.0
     L = lab[..., 0]
     for z, w in zones:
-        h = float(z.get('h', 0)); s = float(z.get('s', 0)); l = float(z.get('l', 0))
-        if not (h or s or l):
+        h = float(z.get('h', 0))
+        s = float(z.get('s', 0))
+        li = float(z.get('l', 0))
+        if not (h or s or li):
             continue
         th = np.deg2rad(h)
         cos_t, sin_t = np.cos(th), np.sin(th)
@@ -110,8 +117,8 @@ def color_grading(bgr, shadow=None, mid=None, high=None):
             a = a * (1 + s / 100.0 * w)
             b = b * (1 + s / 100.0 * w)
         # lightness
-        if l:
-            L = L + l * 0.6 * w
+        if li:
+            L = L + li * 0.6 * w
     lab[..., 1] = np.clip(a + 128, 0, 255)
     lab[..., 2] = np.clip(b + 128, 0, 255)
     lab[..., 0] = np.clip(L, 0, 255)
@@ -187,7 +194,9 @@ def color_editor(bgr, bands=None, global_hue=0):
     bands = bands or {}
     hsv = cv2.cvtColor(out, cv2.COLOR_BGR2HSV).astype(np.float32)
     h = hsv[..., 0] * 2.0  # 0..360
-    total_h = np.zeros_like(h); total_s = np.zeros_like(h); total_l = np.zeros_like(h)
+    total_h = np.zeros_like(h)
+    total_s = np.zeros_like(h)
+    total_l = np.zeros_like(h)
     wsum = np.zeros_like(h)
     for i, adj in bands.items():
         i = int(i)

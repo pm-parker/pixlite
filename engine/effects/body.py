@@ -1,9 +1,10 @@
 """Body shaping & body fixes — B-group D. 全身美型基础 (瘦腰/瘦腿/长腿),
 祛副乳, 祛妊娠纹. Uses cloth/neck/bg parsing classes as body-region proxies
 (no dedicated body segmentation model)."""
-import numpy as np, cv2
+import cv2
+import numpy as np
+
 from ..perception import mask_of
-from . import wrinkle as _w
 
 
 def _body_proxy_mask(parsing):
@@ -24,7 +25,7 @@ def body_slim(bgr, parsing, faces, part='waist', degree=0.5):
     body = _body_proxy_mask(parsing)
     if body.max() == 0:
         body = np.full((h, w), 255, np.uint8)  # whole-image fallback band
-    ys, xs = np.where(body > 128)
+    _ys, xs = np.where(body > 128)
     if len(xs) == 0:
         return bgr
     cx = xs.mean()

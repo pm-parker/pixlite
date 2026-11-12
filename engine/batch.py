@@ -1,7 +1,9 @@
 """Batch directory processing — NAS core scenario.
 Walk a directory (optionally recursive), run pipeline on each image, mirror
 output structure. Supports resume, concurrency, RAW formats."""
-import os, sys, time, json, threading, queue
+import os
+import threading
+import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
 IMG_EXTS = {'.jpg', '.jpeg', '.png', '.webp', '.bmp', '.tif', '.tiff'}
@@ -10,7 +12,7 @@ RAW_EXTS = {'.dng', '.cr2', '.cr3', '.arw', '.nef', '.raf', '.orf', '.rw2'}
 def collect_images(src_dir, recursive=True):
     out = []
     it = os.walk(src_dir) if recursive else [(src_dir, [], os.listdir(src_dir))]
-    for root, dirs, files in it:
+    for root, _dirs, files in it:
         for f in files:
             ext = os.path.splitext(f)[1].lower()
             if ext in IMG_EXTS or ext in RAW_EXTS:
@@ -32,7 +34,8 @@ def _check_dims(path):
         raise ValueError(f'image {w}x{h} exceeds PIXLITE_MAX_PIXELS={MAX_PIXELS}')
 
 def load_image(path):
-    import cv2, numpy as np
+    import cv2
+    import numpy as np
     _check_dims(path)
     ext = os.path.splitext(path)[1].lower()
     if ext in RAW_EXTS:
@@ -44,7 +47,7 @@ def load_image(path):
     return cv2.imdecode(data, cv2.IMREAD_COLOR)
 
 def save_image(img, path, quality=92):
-    import cv2, numpy as np
+    import cv2
     os.makedirs(os.path.dirname(path), exist_ok=True)
     ext = os.path.splitext(path)[1].lower()
     if ext == '.jpg' or ext == '.jpeg':

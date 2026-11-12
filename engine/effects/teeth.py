@@ -1,8 +1,10 @@
 """Smile management + teeth ops on the 478-pt mesh — B-group C/D upgrade.
 笑容管理 (5 levels), 露龈调整左/右, 牙齿排齐, 牙齿祛瑕疵."""
-import numpy as np, cv2
-from ..perception import mask_of
+import cv2
+import numpy as np
+
 from ..perception import landmarks as L
+from ..perception import mask_of
 
 
 def smile_manage(bgr, faces, level=3):
@@ -17,9 +19,11 @@ def smile_manage(bgr, faces, level=3):
         return bgr
     h, w = bgr.shape[:2]
     pts = f['mesh']
-    box = f['box']; fh = box[3]
+    box = f['box']
+    fh = box[3]
     yy, xx = np.mgrid[0:h, 0:w].astype(np.float32)
-    dispX = np.zeros((h, w), np.float32); dispY = np.zeros((h, w), np.float32)
+    dispX = np.zeros((h, w), np.float32)
+    dispY = np.zeros((h, w), np.float32)
     radius = fh * 0.22
     anchors = [(pts[L.MOUTH_L], (0, -fh * 0.045 * d)),
                (pts[L.MOUTH_R], (0, -fh * 0.045 * d)),
@@ -29,7 +33,8 @@ def smile_manage(bgr, faces, level=3):
         ddx, ddy = c[0] - xx, c[1] - yy
         dist = np.sqrt(ddx * ddx + ddy * ddy)
         fall = np.clip(1 - dist / radius, 0, 1) ** 2
-        dispX += dx * fall; dispY += dy * fall
+        dispX += dx * fall
+        dispY += dy * fall
     return cv2.remap(bgr, xx - dispX, yy - dispY, cv2.INTER_LINEAR,
                      borderMode=cv2.BORDER_REFLECT)
 
@@ -41,11 +46,8 @@ def _teeth_mask(bgr, parsing, faces):
     m = mask_of(parsing, 'mouth', dilate=1)
     if faces and 'mesh' in faces[0]:
         poly = L.poly_mask(faces[0]['mesh'], L.LIPS_OUTER, bgr.shape, feather=2)
-        if m.max() == 0:
-            # parser found no open-mouth class: use eroded lip polygon interior
-            m = cv2.erode(poly, np.ones((3, 3), np.uint8))
-        else:
-            m = cv2.bitwise_and(m, poly)
+        # parser found no open-mouth class: use eroded lip polygon interior
+        m = cv2.erode(poly, np.ones((3, 3), np.uint8)) if m.max() == 0 else cv2.bitwise_and(m, poly)
     hsv = cv2.cvtColor(bgr, cv2.COLOR_BGR2HSV)
     teeth = (m > 128) & (hsv[..., 1] < 110) & (hsv[..., 2] > 110)
     if not teeth.any():
@@ -62,10 +64,10 @@ def gum_fix(bgr, parsing, faces, degree=0.5, side='l'):
     f = faces[0]
     if 'mesh' not in f:
         return bgr
-    pts = f['mesh']; box = f['box']; fh = box[3]
+    pts = f['mesh']
+    fh = f['box'][3]
     mx = (pts[L.MOUTH_L][0] + pts[L.MOUTH_R][0]) / 2
     my = (pts[L.MOUTH_L][1] + pts[L.MOUTH_R][1]) / 2
-    half_w = (pts[L.MOUTH_R][0] - pts[L.MOUTH_L][0]) * 0.30
     cx = (pts[L.MOUTH_L][0] + mx) / 2 if side == 'l' else (mx + pts[L.MOUTH_R][0]) / 2
     h, w = bgr.shape[:2]
     yy, xx = np.mgrid[0:h, 0:w].astype(np.float32)
@@ -97,7 +99,8 @@ def teeth_align(bgr, parsing, faces, level=3):
     pts = f['mesh']
     # warp interior teeth region: map by cubic distortion toward mouth-center line
     h, w = bgr.shape[:2]
-    cx, cy = (pts[L.MOUTH_L] + pts[L.MOUTH_R]) / 2
+    mc = (pts[L.MOUTH_L] + pts[L.MOUTH_R]) / 2
+    cx = mc[0]
     mw = pts[L.MOUTH_R][0] - pts[L.MOUTH_L][0]
     strength = 0.06 * lv
     yy, xx = np.mgrid[0:h, 0:w].astype(np.float32)

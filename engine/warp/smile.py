@@ -1,7 +1,8 @@
 """Smile warp — 表情微笑嘴角 (B-group local CV).
 Mouth-corner anchors estimated from YuNet 5-pt (mouth corners in landmarks
 3/4) with box-ratio fallback; radial MLS-style lift of both corners."""
-import numpy as np, cv2
+import cv2
+import numpy as np
 
 
 def _mouth_corners(face):
@@ -26,7 +27,7 @@ def smile_lift(img, faces, degree=50):
     for f in faces:
         if 'box' not in f:
             continue
-        x, y, fw, fh = f['box']
+        _, _, fw, fh = f['box']
         cl, cr = _mouth_corners(f)
         radius = min(fw * 0.18, min(h, w) * 0.08)
         lift = fh * 0.045 * d

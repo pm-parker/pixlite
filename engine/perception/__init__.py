@@ -67,7 +67,7 @@ class FaceDetector:
     def __call__(self, bgr):
         h, w = bgr.shape[:2]
         self.det.setInputSize((w, h))
-        n, faces = self.det.detect(bgr)
+        _, faces = self.det.detect(bgr)
         out = []
         if faces is not None:
             for f in faces[:self.max_faces]:

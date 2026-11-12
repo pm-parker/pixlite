@@ -24,7 +24,7 @@ def _below_eye_roi(parsing, k0=0.8, k1=1.9):
     m = np.zeros_like(eye)
     for side in ('eye_l', 'eye_r'):
         e = mask_of(parsing, side, dilate=2)
-        ys, xs = np.where(e > 128)
+        ys, _xs = np.where(e > 128)
         if len(ys) == 0:
             continue
         hgt = max(ys.max() - ys.min(), 4)

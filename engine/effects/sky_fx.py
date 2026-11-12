@@ -1,6 +1,10 @@
 """SkyFX — 天空检测(色彩+位置启发式) 与 替换/增强 (对标像素蛋糕"天空"功能).
 启发式适用于外景蓝天场景; 人像区用 MODNet alpha 保护, 不误伤."""
-import cv2, numpy as np
+import contextlib
+
+import cv2
+import numpy as np
+
 
 def detect_sky(bgr, feather=9):
     """返回 float32 天空掩码(0..1, 原分辨率). 蓝色域+最大连通域+上半偏向+人像保护."""
@@ -17,13 +21,11 @@ def detect_sky(bgr, feather=9):
         sky = (lab == big).astype(np.float32)
     else:
         sky = np.zeros((H, W), np.float32)
-    # 人像保护: MODNet alpha 前景剔除
-    try:
+    # 人像保护: MODNet alpha 前景剔除 (模型缺失时退化为不保护)
+    with contextlib.suppress(Exception):
         from .background_fx import get_alpha
         alpha = get_alpha(bgr)
         sky = sky * (1 - (alpha > 0.6).astype(np.float32))
-    except Exception:
-        pass
     sky = cv2.GaussianBlur(sky, (0, 0), feather)
     return sky
 

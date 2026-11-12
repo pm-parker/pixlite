@@ -1,6 +1,8 @@
 """Color module — aligned with PixCake TSRE color layer.
 LUT filters (92-filter system), AI color match (追色, Reinhard+skin protect)."""
-import numpy as np, cv2, os
+import cv2
+import numpy as np
+
 
 def _lut_to_cube(lut_img):
     """Square PNG LUT (k*k tiles of n x n, n = k*k; 512x512 -> 8x8 tiles of 64) -> cube[b, g, r] (BGR).
@@ -9,7 +11,7 @@ def _lut_to_cube(lut_img):
     h, w = lut_img.shape[:2]
     if w != h:
         raise ValueError('only square PNG LUTs supported')
-    k = int(round(w ** (1.0 / 3)))
+    k = round(w ** (1.0 / 3))
     n = k * k
     if k * n != w:
         raise ValueError(f'unsupported LUT size {w}x{h} (expect k^3 square, e.g. 512 = 8 tiles x 64)')
@@ -30,7 +32,7 @@ def apply_lut(bgr, lut_img, degree=70):
     fr = f - i0
     b0, g0, r0 = i0[..., 0], i0[..., 1], i0[..., 2]
     fb, fg, frr = fr[..., 0:1], fr[..., 1:2], fr[..., 2:3]
-    out = np.zeros(bgr.shape[:2] + (3,), np.float32)
+    out = np.zeros((*bgr.shape[:2], 3), np.float32)
     for db, wb in ((0, 1 - fb), (1, fb)):
         for dg, wg in ((0, 1 - fg), (1, fg)):
             for dr, wr in ((0, 1 - frr), (1, frr)):
@@ -174,12 +176,12 @@ def _hue_band_weight(hue_deg, band):
     return np.clip(1 - np.abs(d) / span, 0, 1)
 
 
-def hsl_adjust(bgr, band, h, s, l):
+def hsl_adjust(bgr, band, h, s, lum):
     """Aligned: HSL 8色相带 (红/橙/黄/绿/浅绿/蓝/紫/洋红) ±100 色相/饱和度/明亮度.
     BUGFIX: 旧实现每带只占 22.5° (8 带合计只覆盖 0-180°), 蓝/紫/洋红像素 (180-360°)
     任何带都调不动, 而"蓝色"带实际作用在绿色上。"""
     band = int(band) % len(HSL_CENTERS)
-    if not (h or s or l):
+    if not (h or s or lum):
         return bgr
     hsv = cv2.cvtColor(bgr, cv2.COLOR_BGR2HSV).astype(np.float32)
     hh = hsv[..., 0]  # 0..179
@@ -187,5 +189,5 @@ def hsl_adjust(bgr, band, h, s, l):
     w = w * np.clip(hsv[..., 1] / 40.0, 0, 1)   # 近灰像素无可靠色相, 不参与
     hsv[..., 0] = (hh + h * 0.09 * w) % 180
     hsv[..., 1] = np.clip(hsv[..., 1] + s * 1.2 * w, 0, 255)
-    hsv[..., 2] = np.clip(hsv[..., 2] + l * 1.2 * w, 0, 255)
+    hsv[..., 2] = np.clip(hsv[..., 2] + lum * 1.2 * w, 0, 255)
     return cv2.cvtColor(np.clip(hsv, 0, 255).astype(np.uint8), cv2.COLOR_HSV2BGR)

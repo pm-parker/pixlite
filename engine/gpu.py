@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """GPU execution provider 自适应工厂 — 环境变量 PIXLITE_EP 控制, auto 全厂商探测。
 
 飞牛 fnOS 应用中心驱动包对应关系:
@@ -6,7 +5,9 @@
 - AMD:    应用中心装 AMD ROCm 7.2     → venv 装 onnxruntime-rocm → ROCmExecutionProvider
 - Intel:  核显驱动系统自带(i915)      → venv 装 onnxruntime-openvino → OpenVINOExecutionProvider
 """
-import os, shutil, subprocess, platform
+import contextlib
+import os
+import subprocess
 
 _nvidia_hint_paths = ('/proc/driver/nvidia/version', '/dev/nvidia0', '/usr/lib/x86_64-linux-gnu/libcuda.so.1')
 _amd_hint_paths = ('/sys/class/drm/card0/device/vendor',)  # 0x1002 = AMD
@@ -17,13 +18,11 @@ def _has_file_any(paths):
 
 def _pci_vendor():
     """读 GPU PCI vendor id (0x10de=NVIDIA, 0x1002=AMD, 0x8086=Intel)"""
-    try:
+    with contextlib.suppress(Exception):
         for d in os.listdir('/sys/class/drm'):
             if d.startswith('card') and d[4:].isdigit():
-                v = open(f'/sys/class/drm/{d}/device/vendor').read().strip()
-                return v
-    except Exception:
-        pass
+                with open(f'/sys/class/drm/{d}/device/vendor') as fh:
+                    return fh.read().strip()
     return None
 
 def detect_gpu():
@@ -34,9 +33,10 @@ def detect_gpu():
         for cmd in (['powershell','-NoProfile','-Command','(Get-CimInstance Win32_VideoController).Name'],
                     ['wmic','path','win32_VideoController','get','name']):
             try:
-                r = subprocess.run(cmd, capture_output=True, text=True, timeout=15)
+                r = subprocess.run(cmd, capture_output=True, text=True, timeout=15, check=False)
                 txt = (r.stdout or '').lower()
-                if txt.strip(): break
+                if txt.strip():
+                    break
             except Exception:
                 continue
         if 'nvidia' in txt or 'geforce' in txt or 'quadro' in txt or 'tesla' in txt:
@@ -60,7 +60,9 @@ def detect_gpu():
         # 780M = gfx1103: ROCm 7.1+ 官方支持; 老版本可 HSA_OVERRIDE_GFX_VERSION=11.0.2 兼容跑
         if has_mgx or has_rocm:
             return ('amd', 'migraphx', 'onnxruntime-rocm(AMD官方wheel, 见github.com/ROCm/onnxruntime)',
-                    '飞牛应用中心装「AMD MIGraphX」AI 引擎或「AMD ROCm 7.2」; 然后 pip 安装 AMD 官方 onnxruntime_rocm wheel (repo.radeon.com), 设 PIXLITE_EP=migraphx; 780M(gfx1103) 若报不支持, 启动前 export HSA_OVERRIDE_GFX_VERSION=11.0.2')
+                    '飞牛应用中心装「AMD MIGraphX」AI 引擎或「AMD ROCm 7.2」; 然后 pip 安装 AMD 官方 '
+                    'onnxruntime_rocm wheel (repo.radeon.com), 设 PIXLITE_EP=migraphx; '
+                    '780M(gfx1103) 若报不支持, 启动前 export HSA_OVERRIDE_GFX_VERSION=11.0.2')
         return ('amd', 'cpu', None, '飞牛应用中心装「AMD MIGraphX」AI 引擎后重启应用')
     if vendor == '0x8086':
         return ('intel', 'openvino', 'onnxruntime-openvino',
@@ -83,14 +85,12 @@ def get_providers():
     if suggest == 'cpu':
         return ['CPUExecutionProvider']
     # auto: 只在对应 EP 真正可用时启用, 否则回退 CPU
-    try:
+    with contextlib.suppress(Exception):
         import onnxruntime as ort
         avail = ort.get_available_providers()
         want = fixed[suggest][0]
         if want in avail:
             return [want, 'CPUExecutionProvider']
-    except Exception:
-        pass
     return ['CPUExecutionProvider']
 
 class ModelUnavailable(RuntimeError):
@@ -105,6 +105,7 @@ def make_session(model_path, sess_options=None):
     而不是在推理时报晦涩的 ONNX 异常。完整 sha256 校验由 tools/download_models.py 负责;
     PIXLITE_VERIFY_MODELS=sha256 时加载前也做完整哈希校验。"""
     import onnxruntime as ort
+
     from .perception.models_manifest import check
     reason = check(model_path, full=os.environ.get('PIXLITE_VERIFY_MODELS') == 'sha256')
     if reason:
@@ -122,7 +123,7 @@ def gpu_status():
     """供 /api/gpu 展示: 厂商/建议 EP/当前 providers/结构化引导(应用市场驱动包 + pip 包 + 参数)"""
     vendor, suggest, pip_pkg, guide = detect_gpu()
     drv = FNOS_DRIVER_PACKAGES.get(vendor, {})
-    accel_ready = not (get_providers() == ['CPUExecutionProvider']) if vendor != 'none' else False
+    accel_ready = get_providers() != ['CPUExecutionProvider'] if vendor != 'none' else False
     return {
         'vendor': vendor, 'suggest_ep': suggest, 'pip_package': pip_pkg,
         'guide': guide, 'providers': get_providers(),

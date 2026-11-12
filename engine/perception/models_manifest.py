@@ -7,7 +7,8 @@ this table; engine.gpu.make_session refuses to load a model whose size does not 
 
 To update a model: change url/revision, then set size/sha256 from the new artifact.
 """
-import os, hashlib
+import hashlib
+import os
 
 HF = "https://huggingface.co"
 

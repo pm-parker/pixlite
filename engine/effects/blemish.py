@@ -2,7 +2,9 @@
 High-frequency outlier detection inside skin mask -> local median replacement
 + partial texture re-add. mode='mole' targets small strong dark spots,
 mode='spot' general blemishes, region='body' targets skin outside the face box."""
-import numpy as np, cv2
+import cv2
+import numpy as np
+
 from ..perception import mask_of
 
 
@@ -36,10 +38,7 @@ def blemish_remove(bgr, parsing, faces=None, degree=0.5, mode='spot', region='fa
     base = cv2.GaussianBlur(gray, (0, 0), 2.0)
     detail = gray - base
     sel = (m > 128)
-    if mode == 'mole':
-        spot = ((detail < -thr) & sel)
-    else:
-        spot = ((np.abs(detail) > thr) & sel)
+    spot = (detail < -thr) & sel if mode == 'mole' else (np.abs(detail) > thr) & sel
     spot = (spot.astype(np.uint8) * 255)
     spot = cv2.morphologyEx(spot, cv2.MORPH_CLOSE, np.ones((3, 3), np.uint8))
     spot = cv2.dilate(spot, np.ones((3, 3), np.uint8), iterations=1 if mode == 'mole' else 2)

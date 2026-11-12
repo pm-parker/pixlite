@@ -1,6 +1,8 @@
 """Makeup effects — B-group C/D upgrade. 高光立体/阴影立体, 眉毛增强左/右,
 眼妆增强左/右, 唇妆增强: HSL boosts inside parsing masks with feather."""
-import numpy as np, cv2
+import cv2
+import numpy as np
+
 from ..perception import mask_of
 from .eyes import _side_masks
 

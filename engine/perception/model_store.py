@@ -66,7 +66,7 @@ def sources(name):
         alts += [p + url for p in GH_PROXIES]
     lang = (os.environ.get('TRIM_SYS_LANGUAGE') or os.environ.get('LANG') or '').lower()
     prefer_mirror = os.environ.get('PIXLITE_MODEL_MIRROR_FIRST', '1' if lang.startswith('zh') else '0') == '1'
-    out = alts + [url] if prefer_mirror else [url] + alts
+    out = [*alts, url] if prefer_mirror else [url, *alts]
     return list(dict.fromkeys(out))
 
 
@@ -129,10 +129,10 @@ def _fetch(url, part, name, timeout):
     have = os.path.getsize(part) if os.path.exists(part) else 0
     if not url.startswith(('http://', 'https://')):   # S310: 只允许 http(s) 模型源
         raise ValueError(f'unsupported model url scheme: {url.split(":")[0]}')
-    req = urllib.request.Request(url, headers={'User-Agent': 'PixLite-model-fetch/1.0'})  # noqa: S310 — url 来自 models_manifest 静态清单，scheme 已白名单校验
+    req = urllib.request.Request(url, headers={'User-Agent': 'PixLite-model-fetch/1.0'})
     if have:
         req.add_header('Range', f'bytes={have}-')
-    with urllib.request.urlopen(req, timeout=timeout) as r:  # noqa: S310 — scheme 已白名单校验
+    with urllib.request.urlopen(req, timeout=timeout) as r:
         if have and r.status != 206:          # server ignored Range: restart
             have = 0
         mode = 'ab' if have else 'wb'

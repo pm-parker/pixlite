@@ -2,8 +2,11 @@
 Uses extracted 24-point contour factor tables (presets/facesurgery_headnarrow.json):
 normal/left/right profiles keyed by head yaw, pop factors, degree 0-100.
 Geometry: face box (YuNet) -> 24-point closed jaw contour -> MLS/forward-warp inward."""
-import json, os, numpy as np, cv2
-from . import liquify_push
+import json
+import os
+
+import cv2
+import numpy as np
 
 _HERE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
@@ -17,8 +20,6 @@ def contour_points_24(box, img_shape):
     Returns (24,2) float points in image coords."""
     x, y, fw, fh = box
     cx = x + fw / 2
-    # left temple(4) -> left cheek(4) -> jaw(4) -> chin(4) -> right jaw(4) -> right cheek(4) -> right temple(4)
-    ts = np.linspace(0, 1, 7)
     # parametric jaw ellipse (semi-axes: fw/2, fh*0.62 centered at (cx, y+fh*0.55))
     acx, acy = cx, y + fh * 0.55
     rx, ry = fw * 0.5, fh * 0.62
@@ -37,7 +38,8 @@ def apply_head_narrow(img, faces, degree=50, profile=None, yaw='normal'):
     nf = np.array(profile['contour'][yaw if yaw in profile['contour'] else 'normal'], np.float32)
     h, w = img.shape[:2]
     yy, xx = np.mgrid[0:h, 0:w].astype(np.float32)
-    dispX = np.zeros((h, w), np.float32); dispY = np.zeros((h, w), np.float32)
+    dispX = np.zeros((h, w), np.float32)
+    dispY = np.zeros((h, w), np.float32)
     for f in faces:
         if 'box' not in f:
             continue

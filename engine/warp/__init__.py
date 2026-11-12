@@ -1,8 +1,14 @@
 """MLS (Moving Least Squares) warp — aligned with FaceSurgery/PoseRefine/Liquify.
 Reference: Schaefer et al. 2006; PixCake uses control-point driven MLS (FaceSurgery
 ControlNodes + liquify GLSL). CPU version via dense remap (LiquifyRunWarp.frag semantics)."""
-import numpy as np, cv2
+import cv2
+import numpy as np
+
 from . import smile
+
+# pipeline 经 W.smile.smile_lift 属性访问 (pipeline/__init__.py), __all__ 声明有意再导出
+__all__ = ["smile"]
+
 
 def mls_rigid_warp(img, src_pts, dst_pts, grid_step=8, alpha=1.0):
     """Rigid MLS. src_pts=original landmark positions, dst_pts=target positions."""
@@ -18,21 +24,23 @@ def mls_rigid_warp(img, src_pts, dst_pts, grid_step=8, alpha=1.0):
     phat = p - (wts[:, None] * p).sum(1, keepdims=True) / wts.sum(1, keepdims=True)
     qhat = q - (wts[:, None] * q).sum(1, keepdims=True) / wts.sum(1, keepdims=True)
 
-    mu = (wts[:, None] * (phat[..., 0] * qhat[:, 0] + phat[..., 1] * qhat[:, 1])).sum(1)
     out_pts = np.empty_like(v)
     # solve per-point rigid transform
     for i in range(len(v)):
         A = (wts[i, :, None] * phat).T @ qhat
-        U, S, Vt = np.linalg.svd(A)
+        U, _S, Vt = np.linalg.svd(A)
         R = (Vt.T @ U.T)
         if np.linalg.det(R) < 0:
-            Vt[-1] *= -1; R = Vt.T @ U.T
+            Vt[-1] *= -1
+            R = Vt.T @ U.T
         out_pts[i] = (v[i] - (wts[i] * p).sum(0) / wts.sum(0)) @ R + (wts[i] * q).sum(0) / wts.sum(0)
 
     # build remap from sparse grid (scattered interpolation)
-    gx = (v[:, 0] / grid_step).astype(int); gy = (v[:, 1] / grid_step).astype(int)
+    gx = (v[:, 0] / grid_step).astype(int)
+    gy = (v[:, 1] / grid_step).astype(int)
     gh, gw = h // grid_step + 1, w // grid_step + 1
-    mapx = np.zeros((gh, gw), np.float32); mapy = np.zeros((gh, gw), np.float32)
+    mapx = np.zeros((gh, gw), np.float32)
+    mapy = np.zeros((gh, gw), np.float32)
     ok = (gx < gw) & (gy < gh)
     mapx[gy[ok], gx[ok]] = out_pts[ok, 0]
     mapy[gy[ok], gx[ok]] = out_pts[ok, 1]

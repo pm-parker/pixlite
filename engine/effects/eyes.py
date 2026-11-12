@@ -1,9 +1,11 @@
 """Eye effects needing 478-pt mesh / parsing sides — B-group C/D upgrade.
 亮眼左/右 (per-side), 祛双眼皮贴左/右, 眼镜祛反光, 眼神光.
 Side convention: 'l'/'r' = IMAGE left/right, resolved at runtime by centroid."""
-import numpy as np, cv2
-from ..perception import mask_of
+import cv2
+import numpy as np
+
 from ..perception import landmarks as L
+from ..perception import mask_of
 
 
 def _side_masks(parsing, cls_l, cls_r):
@@ -12,7 +14,7 @@ def _side_masks(parsing, cls_l, cls_r):
     a = mask_of(parsing, cls_l, dilate=1)
     b = mask_of(parsing, cls_r, dilate=1)
     def cx(m):
-        ys, xs = np.where(m > 128)
+        _ys, xs = np.where(m > 128)
         return xs.mean() if len(xs) else -1
     if cx(a) > cx(b):
         a, b = b, a
@@ -43,10 +45,12 @@ def _lid_band(face, idx_eye, shape, k0=0.45, k1=1.5):
     eye height. Returns soft uint8 mask."""
     m = np.zeros(shape[:2], np.uint8)
     pts = face['mesh'][idx_eye]
-    top = pts.min(axis=0); bot = pts.max(axis=0)
-    eh = max(bot[1] - top[1], 3); ew = bot[0] - top[0]
+    top = pts.min(axis=0)
+    bot = pts.max(axis=0)
+    eh = max(bot[1] - top[1], 3)
     x0, x1 = int(top[0]), int(bot[0])
-    y0 = int(max(0, top[1] - eh * k1)); y1 = int(top[1] - eh * (1 - k1) + eh * k0)
+    y0 = int(max(0, top[1] - eh * k1))
+    y1 = int(top[1] - eh * (1 - k1) + eh * k0)
     cv2.rectangle(m, (x0, y0), (max(x1, x0 + 2), max(y1, y0 + 2)), 255, -1)
     return cv2.GaussianBlur(m, (0, 0), 3)
 
@@ -114,11 +118,7 @@ def catchlight(bgr, parsing, faces, degree=0.5, template='dot'):
     if 'mesh' not in f:
         return bgr
     out = bgr.astype(np.float32)
-    lab = cv2.cvtColor(bgr, cv2.COLOR_BGR2LAB).astype(np.float32)
     pts = f['mesh']
-    for iris_idx, eye_idx in ((range(468, 478), L.EYE_L_IDX),
-                              (range(473, 478), L.EYE_R_IDX)):
-        pass  # sides resolved via f['iris_l']/'iris_r'
     for key in ('iris_l', 'iris_r'):
         c = f[key]
         eye_pts = pts[L.EYE_L_IDX] if key == 'iris_l' else pts[L.EYE_R_IDX]
