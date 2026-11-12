@@ -144,9 +144,13 @@ jobs:
           done
           grep -E '^(appname|version|checksum)' /tmp/inspect/manifest
           tar -tzf /tmp/inspect/app.tgz > /tmp/inspect/list
-          for p in ui/config server/web/index.html server/api/main.py requirements.txt; do
+          for p in ui/config server/web/index.html server/api/main.py server/run.py \
+                   engine/perception/model_store.py requirements.txt; do
             grep -qE "(^|/)${p}$" /tmp/inspect/list || { echo "app.tgz missing $p"; exit 1; }
           done
+          mkdir -p /tmp/inspect/app && tar -xzf /tmp/inspect/app.tgz -C /tmp/inspect/app ./ui/config ui/config 2>/dev/null || true
+          cfg=$(find /tmp/inspect/app -path '*ui/config' | head -1)
+          grep -q '"gatewaySocket": "app.sock"' "$cfg" || { echo "ui/config has no gateway entry"; exit 1; }
           echo "LUT filters: $(grep -c 'lut/Filters/.*/filter.png$' /tmp/inspect/list)"
           echo "onnx models: $(grep -c '\.onnx$' /tmp/inspect/list || true)"
           ls -la dist/

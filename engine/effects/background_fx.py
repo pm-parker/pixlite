@@ -1,15 +1,16 @@
 """BackgroundFX — MODNet 人像抠像 + 背景虚化/替换 (对标像素蛋糕"背景"板块: 背景虚化/背景颜色)."""
 from ..gpu import make_session
+from ..perception.model_store import model_path as _model_path
 import os, cv2, numpy as np, onnxruntime as ort
 
-MODEL = os.path.join(os.path.dirname(__file__), '..', 'perception', 'models', 'modnet.onnx')
+MODEL_NAME = 'modnet.onnx'   # resolved via model_store (bundled dir or PIXLITE_MODELS_DIR)
 _cache = {}
 
 def get_session():
     if 's' not in _cache:
         so = ort.SessionOptions()
         so.graph_optimization_level = ort.GraphOptimizationLevel.ORT_ENABLE_ALL
-        _cache['s'] = make_session(MODEL, so)
+        _cache['s'] = make_session(_model_path(MODEL_NAME), so)
     return _cache['s']
 
 def get_alpha(bgr, ref_side=512):

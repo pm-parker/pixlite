@@ -2,7 +2,7 @@
 /* 项目主页：左侧导航 + 项目卡片网格 + 新建向导 + 推荐预设 + 批量任务 */
 import { ref, computed, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { API, store, PRESET_LABELS } from '../lib.js'
+import { API, store, PRESET_LABELS, authState, refreshAuth, needsKey, modelState } from '../lib.js'
 import PathPicker from '../components/PathPicker.vue'
 import PxIcon from '../components/PxIcon.vue'
 
@@ -10,12 +10,31 @@ const emit = defineEmits(['open'])
 
 const presets = ref([])
 onMounted(async () => {
+  await refreshAuth()
+  // 直连端口且未配置密钥: 提示改用飞牛桌面图标 (免密钥), 仍可手动填写
+  if (needsKey() && !localStorage.getItem('pixlite_api_key')) editApiKey()
+  loadDirectToken()
   try { presets.value = await API.presets() } catch (e) { presets.value = [] }
 })
 
-const hasApiKey = computed(() => !!localStorage.getItem('pixlite_api_key'))
+const hasApiKey = ref(!!localStorage.getItem('pixlite_api_key'))
+/* 从飞牛桌面图标打开 (统一网关) 时由 NAS 登录态认证, 完全不需要密钥, 不显示入口;
+   只有直接用 http://NAS:8300 访问时才需要 */
+const showKeyEntry = computed(() => needsKey())
+
+/* 网关模式下, 管理员可一键复制"直连密钥" (给直接访问 :8300 / 其他设备用), 替代 SSH 读取 */
+const directToken = ref('')
+async function loadDirectToken() {
+  if (authState.mode !== 'gateway') return
+  try { directToken.value = (await API.authInfo()).direct_token || '' } catch (e) { directToken.value = '' }
+}
+async function copyDirectToken() {
+  try { await navigator.clipboard.writeText(directToken.value); ElMessage.success('直连密钥已复制') }
+  catch (e) { ElMessageBox.alert(directToken.value, '直连密钥（手动复制）') }
+}
 function editApiKey() {
-  ElMessageBox.prompt('远程访问 NAS 服务时需要填写连接密钥（本机访问无需填写）', '连接密钥', {
+  ElMessageBox.prompt('推荐从飞牛桌面的「PixLite 修图」图标打开，登录飞牛后即可直接使用，无需密钥。' +
+                      '当前是直接访问端口，如需继续请填写连接密钥（管理员从飞牛桌面图标打开后，点左下角「直连密钥」即可复制）。', '连接密钥', {
     inputValue: localStorage.getItem('pixlite_api_key') || '',
     inputPlaceholder: '留空 = 不使用密钥',
     confirmButtonText: '保存',
@@ -208,7 +227,8 @@ async function runBatch() {
     }, 600)
   } catch (e) {
     batchRunning.value = false
-    ElMessage.error(e.message || '批量启动失败')
+    if (!modelState.ready) ElMessage.info('AI 模型正在自动下载，下载完成后即可开始批量精修')
+    else ElMessage.error(e.message || '批量启动失败')
   }
 }
 
@@ -253,6 +273,10 @@ const libCats = [
         <div class="px-tag" @click="diagShow = true" style="cursor:pointer;margin-top:4px">
           <PxIcon name="bug"/> 诊断报告
         </div>
+        <div v-if="directToken" class="px-tag" @click="copyDirectToken" style="cursor:pointer;margin-top:4px"
+             title="仅管理员可见：直接访问 http://NAS:8300 或其他客户端时使用">
+          <PxIcon name="key-round"/> 直连密钥
+        </div>
         <DiagDialog v-model="diagShow"/>
       </div>
     </aside>
@@ -265,7 +289,7 @@ const libCats = [
                   v-if="nav !== 'batch'">
           <template #prefix><PxIcon name="search" :size="14" style="color:var(--px-text-3)"/></template>
         </el-input>
-        <el-tooltip content="连接密钥（远程访问 NAS 时填写）" placement="bottom">
+        <el-tooltip v-if="showKeyEntry" content="直连端口访问需要连接密钥；从飞牛桌面图标打开无需密钥" placement="bottom">
           <el-button size="small" text @click="editApiKey" style="margin-left:8px">
             <PxIcon name="key-round" :size="14" :style="{ color: hasApiKey ? 'var(--px-accent)' : 'var(--px-text-3)' }"/>
           </el-button>

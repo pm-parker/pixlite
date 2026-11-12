@@ -2,7 +2,7 @@
 /* 工作台：顶部(返回/项目名/图库/精修 + 导出) · 左工具条 · 画布 · 底缩略条 · 右参数面板 · 图库网格 · 导出弹窗 */
 import { ref, computed, watch, onMounted, onBeforeUnmount } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { API, store, defaultOverrides, toEngineOverrides, PRESET_TREE, trackError, _h } from '../lib.js'
+import { API, store, defaultOverrides, toEngineOverrides, PRESET_TREE, trackError, _h, modelState } from '../lib.js'
 import CompareCanvas from '../components/CompareCanvas.vue'
 import FilmStrip from '../components/FilmStrip.vue'
 import ParamPanel from '../components/ParamPanel.vue'
@@ -92,7 +92,7 @@ watch(img, async (im) => {
   exifInfo.value = null
   if (!im) return
   try {
-    exifInfo.value = await fetch('/api/exif?path=' + encodeURIComponent(im.path), { headers: _h() }).then(r => r.json())
+    exifInfo.value = await fetch('api/exif?path=' + encodeURIComponent(im.path), { headers: _h() }).then(r => r.json())
   } catch (e) { exifInfo.value = null }
 }, { immediate: true })
 
@@ -122,7 +122,7 @@ function saveSettings(jobId) {
 
 onMounted(async () => {
   try { presets.value = await API.presets() } catch (e) {}
-  try { presetLib.value = await fetch('/api/preset_library', { headers: _h() }).then(r => r.json()) } catch (e) {}
+  try { presetLib.value = await fetch('api/preset_library', { headers: _h() }).then(r => r.json()) } catch (e) {}
 })
 
 /* ---------- retouch 执行（debounce 600ms） ---------- */
@@ -144,6 +144,12 @@ async function runRetouch() {
     saveSettings(jobId)
   } catch (e) {
     processing.value = null
+    // 模型仍在后台自动下载: 底部进度条已经在显示, 用提示代替报错, 下载完成后自动重跑一次
+    if (!modelState.ready) {
+      ElMessage.info('AI 模型正在自动下载，完成后会自动精修当前照片')
+      const stop = watch(() => modelState.ready, ok => { if (ok) { stop(); runRetouch() } })
+      return
+    }
     ElMessage.error(e.message || '精修失败')
   }
 }

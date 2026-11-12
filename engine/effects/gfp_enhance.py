@@ -2,9 +2,10 @@
 流程: 人脸检测(yunet) → 512x512 裁剪(带余量) → GFPGAN → 回贴(羽化融合)
 degree 由滑杆控制回贴强度 (原脸与增强脸的 alpha 混合)."""
 from ..gpu import make_session
+from ..perception.model_store import model_path as _model_path
 import os, cv2, numpy as np, onnxruntime as ort
 
-MODEL = os.path.join(os.path.dirname(__file__), '..', 'perception', 'models', 'gfpgan_1.4.onnx')
+MODEL_NAME = 'gfpgan_1.4.onnx'   # resolved via model_store (bundled dir or PIXLITE_MODELS_DIR)
 _cache = {}
 _lock = __import__('threading').Lock()
 
@@ -13,7 +14,7 @@ def get_session():
         if 's' not in _cache:
             so = ort.SessionOptions()
             so.graph_optimization_level = ort.GraphOptimizationLevel.ORT_ENABLE_ALL
-            _cache['s'] = make_session(MODEL, so)
+            _cache['s'] = make_session(_model_path(MODEL_NAME), so)
         return _cache['s']
 
 def _pre(bgr512):

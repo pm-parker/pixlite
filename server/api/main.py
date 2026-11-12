@@ -1,6 +1,6 @@
 """FastAPI service — batch retouch API for NAS photos."""
 import os, io, uuid, json, threading, re, glob, time, hmac
-from fastapi import FastAPI, UploadFile, File, Form
+from fastapi import FastAPI, UploadFile, File, Form, Request
 from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 import numpy as np, cv2
@@ -27,10 +27,12 @@ _LOOPBACK = ('127.0.0.1', '::1', 'localhost')
 _PUBLIC_API = ('/api/health',)
 _QUERY_KEY_OK = ('/api/image', '/api/result/', '/api/filter-thumb/')
 
-def _auth_decision(client, path, header_key, query_key):
+def _auth_decision(client, path, header_key, query_key, via_gateway=False):
     """返回 None 表示放行, 否则返回 (status, error)。纯函数, 便于测试。"""
     if not path.startswith('/api/') or path in _PUBLIC_API or client in _LOOPBACK:
         return None
+    if via_gateway:
+        return None   # 飞牛统一网关已校验 NAS 登录态 (见 _GatewayMiddleware)
     if not API_TOKEN:
         return None if ALLOW_NO_TOKEN else (401, 'server has no PIXLITE_TOKEN configured; remote access disabled')
     provided = header_key or ''
@@ -40,18 +42,97 @@ def _auth_decision(client, path, header_key, query_key):
         return (401, 'unauthorized')
     return None
 
+
+# ---- 飞牛统一网关 (免密钥访问) ----
+# 桌面图标 → https://<NAS>/app/fnnas.pixlite/ → fnOS 校验 NAS 登录态 → 转发到本服务的
+# Unix Socket (PIXLITE_GATEWAY_SOCKET, 由 server/run.py 监听), 并附带 X-Trim-Userid /
+# X-Trim-Username / X-Trim-Isadmin。经该 socket 进来的请求视为已认证, 用户无需任何密钥。
+# 判定依据是 ASGI scope['server'] (监听端点, 由内核 accept 决定, 客户端无法伪造),
+# 而不是客户端可写的请求头; TCP 端口上的 X-Trim-* 头一律剥离。
+GATEWAY_SOCKET = os.environ.get('PIXLITE_GATEWAY_SOCKET', '')
+GATEWAY_PREFIX = os.environ.get('PIXLITE_GATEWAY_PREFIX', '/app/fnnas.pixlite').rstrip('/')
+_TRIM_HEADERS = (b'x-trim-userid', b'x-trim-username', b'x-trim-isadmin')
+
+
+def _is_gateway_scope(scope):
+    srv = scope.get('server')
+    return bool(GATEWAY_SOCKET) and bool(srv) and srv[0] == GATEWAY_SOCKET
+
+
+class _GatewayMiddleware:
+    """纯 ASGI 中间件: 识别网关流量、去掉网关路径前缀、剥离伪造的 X-Trim-* 头。"""
+    def __init__(self, app):
+        self.app = app
+
+    async def __call__(self, scope, receive, send):
+        if scope['type'] not in ('http', 'websocket'):
+            return await self.app(scope, receive, send)
+        via = _is_gateway_scope(scope)
+        hdrs = scope.get('headers') or []
+        if not via:
+            hdrs = [(k, v) for k, v in hdrs if k.lower() not in _TRIM_HEADERS]
+        path = scope.get('path', '')
+        if GATEWAY_PREFIX and (path == GATEWAY_PREFIX or path.startswith(GATEWAY_PREFIX + '/')):
+            if path == GATEWAY_PREFIX and scope['type'] == 'http':
+                # 前端用相对路径请求 API, 页面 URL 必须以 / 结尾
+                q = scope.get('query_string', b'')
+                loc = (GATEWAY_PREFIX + '/' + ('?' + q.decode('latin-1') if q else '')).encode()
+                await send({'type': 'http.response.start', 'status': 308,
+                            'headers': [(b'location', loc), (b'content-length', b'0')]})
+                await send({'type': 'http.response.body', 'body': b''})
+                return
+            path = path[len(GATEWAY_PREFIX):] or '/'
+        state = dict(scope.get('state') or {})
+        state['via_gateway'] = via
+        scope = dict(scope, path=path, raw_path=path.encode(), headers=hdrs, state=state)
+        return await self.app(scope, receive, send)
+
+
+def _gateway_user(request):
+    if not getattr(request.state, 'via_gateway', False):
+        return None
+    h = request.headers
+    return {'uid': h.get('x-trim-userid', ''), 'username': h.get('x-trim-username', ''),
+            'is_admin': h.get('x-trim-isadmin', '') == 'true'}
+
+
 @app.middleware('http')
 async def _auth(request, call_next):
     client = request.client.host if request.client else ''
+    via = getattr(request.state, 'via_gateway', False)
     d = _auth_decision(client, request.url.path, request.headers.get('X-API-Key'),
-                       request.query_params.get('key'))
+                       request.query_params.get('key'), via_gateway=via)
     if d:
-        return JSONResponse({'error': d[1]}, status_code=d[0])
+        return JSONResponse({'error': d[1], 'auth_required': True}, status_code=d[0])
     return await call_next(request)
 
+
+app.add_middleware(_GatewayMiddleware)
+
 @app.get('/api/health')
-def health():
-    return {'ok': True}
+def health(request: Request):
+    """公开接口: 告诉前端当前连接的认证方式, 便于免密钥 / 引导填写密钥。"""
+    client = request.client.host if request.client else ''
+    if getattr(request.state, 'via_gateway', False):
+        mode = 'gateway'
+    elif client in _LOOPBACK:
+        mode = 'local'
+    elif API_TOKEN:
+        mode = 'token'
+    else:
+        mode = 'open' if ALLOW_NO_TOKEN else 'disabled'
+    return {'ok': True, 'auth': mode}
+
+
+@app.get('/api/auth/info')
+def auth_info(request: Request):
+    """网关模式下给 NAS 管理员展示"远程直连密钥" (直接访问 :8300 或第三方客户端时使用),
+    取代 SSH 读取 var/api_token。非管理员 / 非网关请求不返回密钥。"""
+    u = _gateway_user(request)
+    out = {'via_gateway': bool(u), 'user': (u or {}).get('username', '')}
+    if u and u['is_admin'] and API_TOKEN:
+        out['direct_token'] = API_TOKEN
+    return out
 
 def _parse_frontend_events(raw):
     """前端事件 JSON 损坏/非列表时不应让诊断接口本身 500 (诊断报告正是出错时才用)。"""
@@ -83,14 +164,51 @@ def debug_report(frontend_events: str = ''):
         'server_events': _recent_events[-20:],
         'frontend_events': _parse_frontend_events(frontend_events),
     }
-    # 模型完整性
+    # 模型完整性 (自动下载状态)
     try:
-        import glob as _g
-        models = _g.glob(os.path.join(os.path.dirname(__file__), '..', '..', 'engine', 'perception', 'models', '*.onnx'))
-        report['models_found'] = len(models)
+        st = model_store.status()
+        report['models_found'] = st['ready_count']
+        report['models'] = {k: v for k, v in st.items() if k != 'models'}
     except Exception:
         report['models_found'] = -1
     return report
+
+
+# ---- 模型自动下载 (用户零操作) ----
+# 启动时后台线程检查 8 个模型: full 包内置的直接用; 缺失的自动下载到 PIXLITE_MODELS_DIR
+# (fnOS: ${TRIM_PKGVAR}/models, 升级不丢), 断点续传 + 多源切换 + sha256 校验, 失败每 5 分钟重试。
+# 前端轮询 /api/models/status 显示进度; 模型未就绪时精修返回 503 + 友好提示。
+from engine.perception import model_store
+from engine.gpu import ModelUnavailable
+
+if os.environ.get('PIXLITE_AUTO_DOWNLOAD_MODELS', '1') == '1':
+    model_store.start_background(log=lambda m: _log_event('models', m))
+
+
+def _models_not_ready():
+    """模型未就绪时的统一 503 响应 (前端据此显示下载进度, 而不是报错)。
+    PIXLITE_REQUIRE_MODELS=0 关闭该检查 (单元测试 / 只用滤镜等不需模型的开发场景)。"""
+    if os.environ.get('PIXLITE_REQUIRE_MODELS', '1') != '1':
+        return None
+    st = model_store.status()
+    if st['ready']:
+        return None
+    msg = (f'AI 模型首次使用需要下载，已完成 {st["percent"]}%，下载完成后即可精修'
+           if st['phase'] != 'failed' else f'AI 模型下载失败，系统会自动重试：{st["error"][:120]}')
+    body = {k: v for k, v in st.items() if k != 'models'}
+    body.update(error=msg, models_pending=True, download_error=st['error'])
+    return JSONResponse(body, status_code=503)
+
+
+@app.get('/api/models/status')
+def models_status():
+    return model_store.status()
+
+
+@app.post('/api/models/retry')
+def models_retry():
+    started = model_store.retry_now(log=lambda m: _log_event('models', m))
+    return {'started': started, **{k: v for k, v in model_store.status().items() if k != 'models'}}
 
 @app.get('/api/gpu')
 def gpu_info():
@@ -317,6 +435,8 @@ def _run_job(job_id, path, preset, out_path, overrides=None, routing=None, perso
             raise RuntimeError('结果编码失败')
         buf.tofile(out_path)   # unicode-safe (cv2.imwrite 在 Windows 中文路径下静默失败)
         jobs[job_id].update(status='done', output=out_path)
+    except ModelUnavailable as e:
+        jobs[job_id].update(status='error', error=str(e)[:300], models_pending=True)
     except Exception as e:
         import traceback
         _log_event('job_error', traceback.format_exc()[-1500:])
@@ -343,6 +463,9 @@ async def retouch(file: UploadFile = File(...), preset: str = Form('wedding_basi
         _preset_path(preset)
     except ValueError as e:
         return JSONResponse({'error': str(e)}, status_code=400)
+    nr = _models_not_ready()          # 先做廉价校验, 再判断模型; 不落盘上传文件
+    if nr:
+        return nr
     job_id = uuid.uuid4().hex[:12]
     ext = os.path.splitext(os.path.basename(file.filename or ''))[1].lower()
     if not re.match(r'^\.[a-z0-9]{1,5}$', ext):
@@ -430,6 +553,9 @@ async def batch(src_dir: str = Form(...), dst_dir: str = Form(''),
     # 输出目录不能在源目录内: 递归模式下第二次运行会把上次输出当输入再精修一遍
     if os.path.realpath(dst).startswith(os.path.realpath(src_dir).rstrip(os.sep) + os.sep):
         return JSONResponse({'error': 'dst_dir 不能位于 src_dir 内部'}, 400)
+    nr = _models_not_ready()
+    if nr:
+        return nr
     files = collect_images(src_dir, recursive)
     if len(files) > MAX_BATCH_FILES:
         return JSONResponse({'error': f'图片数 {len(files)} 超过单批上限 {MAX_BATCH_FILES} (PIXLITE_MAX_BATCH_FILES)'}, 413)

@@ -1,86 +1,66 @@
 #!/usr/bin/env python3
-"""Download PixLite model files (public open-source models) into engine/perception/models/.
+"""Download PixLite model files (public open-source models).
+
+普通用户不需要运行本脚本: 服务启动后会在后台自动下载缺失模型 (engine/perception/model_store.py)。
+本脚本用于 CI 构建内置模型的 full 包、开发机预下载, 或排障。
 
 All models are public open-source weights (BSD-3 / Apache-2.0 / MIT sources). ~1.1GB total.
 URLs are pinned to immutable revisions and every file is verified by size + SHA-256
-(see engine/perception/models_manifest.py). Existing files are re-verified; invalid
-ones are replaced. A download is only moved into place after it passes verification.
+(engine/perception/models_manifest.py). Downloads resume after interruption and fail over
+between sources (official → hf-mirror.com → GitHub proxy). Stdlib only.
 
 Usage:
-    python tools/download_models.py            # direct
-    python tools/download_models.py --mirror   # use hf-mirror.com (CN network)
-    python tools/download_models.py --verify   # only verify existing files, no download
+    python tools/download_models.py              # into engine/perception/models (bundled dir)
+    python tools/download_models.py --dir DIR    # into another directory
+    python tools/download_models.py --mirror     # try mirrors first (CN network)
+    python tools/download_models.py --verify     # only verify existing files, no download
 """
-import os, sys, urllib.request, importlib.util
+import os, sys, argparse, importlib.util
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(HERE)
-# 直接按文件加载清单, 不经过 engine.perception/__init__ (其依赖 numpy/cv2/onnxruntime):
-# 下载/校验模型只需标准库, 可在未装依赖的环境 (CI 打包机、NAS 首装) 运行
+# 按文件加载, 不经过 engine.perception/__init__ (其依赖 numpy/cv2/onnxruntime)
 _spec = importlib.util.spec_from_file_location(
-    'models_manifest', os.path.join(ROOT, 'engine', 'perception', 'models_manifest.py'))
-_mm = importlib.util.module_from_spec(_spec)
-_spec.loader.exec_module(_mm)
-FILES, check, sha256_of = _mm.MODELS, _mm.check, _mm.sha256_of
-
-MODELS = os.path.join(ROOT, 'engine', 'perception', 'models')
-
-
-def verify_file(path, spec):
-    size = os.path.getsize(path)
-    if size != spec['size']:
-        raise ValueError(f'size {size} != expected {spec["size"]}')
-    digest = sha256_of(path)
-    if digest != spec['sha256']:
-        raise ValueError(f'sha256 {digest} != expected {spec["sha256"]}')
-
-
-def dl(name, url, dst):
-    print(f"[{name}] GET {url}")
-    tmp = dst + ".part"
-    try:
-        urllib.request.urlretrieve(url, tmp)
-        verify_file(tmp, FILES[name])
-        os.replace(tmp, dst)
-    finally:
-        if os.path.exists(tmp):
-            os.remove(tmp)
-    print(f"[{name}] -> {dst} ({os.path.getsize(dst)} bytes, sha256 OK)")
+    'pixlite_model_store', os.path.join(ROOT, 'engine', 'perception', 'model_store.py'))
+store = importlib.util.module_from_spec(_spec)
+_spec.loader.exec_module(store)
 
 
 def main():
-    mirror = "--mirror" in sys.argv
-    verify_only = "--verify" in sys.argv
-    os.makedirs(MODELS, exist_ok=True)
+    ap = argparse.ArgumentParser()
+    ap.add_argument('--dir', default=store.BUNDLED_DIR)
+    ap.add_argument('--mirror', action='store_true')
+    ap.add_argument('--verify', action='store_true')
+    a = ap.parse_args()
+    if a.mirror:
+        os.environ['PIXLITE_MODEL_MIRROR_FIRST'] = '1'
+    os.makedirs(a.dir, exist_ok=True)
     fails = []
-    for name, spec in FILES.items():
-        url = spec['url']
-        if mirror:
-            url = url.replace("https://huggingface.co", "https://hf-mirror.com")
-        dst = os.path.join(MODELS, name)
+    for name in store.MODELS:
+        dst = os.path.join(a.dir, name)
         if os.path.exists(dst):
-            reason = check(dst, full=True)
+            reason = store.check(dst, full=True)
             if reason is None:
-                print(f"[{name}] exists, verified")
+                print(f'[{name}] exists, verified')
                 continue
-            print(f"[{name}] invalid ({reason})" + ("" if verify_only else ", re-downloading"))
-            if verify_only:
-                fails.append(name)
-                continue
-        elif verify_only:
-            print(f"[{name}] missing")
+            print(f'[{name}] invalid ({reason})' + ('' if a.verify else ', re-downloading'))
+            if not a.verify:
+                os.remove(dst)
+        elif a.verify:
+            print(f'[{name}] missing')
+        if a.verify:
             fails.append(name)
             continue
         try:
-            dl(name, url, dst)
+            store.download_one(name, dest_dir=a.dir)
         except Exception as e:
-            print(f"[{name}] FAILED: {e}")
+            print(f'[{name}] FAILED: {e}')
             fails.append(name)
     if fails:
-        print("FAILED:", ", ".join(fails))
+        print('FAILED:', ', '.join(fails))
         sys.exit(1)
-    print("All models ready:", os.path.abspath(MODELS))
+    print('All models ready:', os.path.abspath(a.dir))
 
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     main()

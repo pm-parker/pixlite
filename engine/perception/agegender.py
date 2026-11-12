@@ -5,7 +5,8 @@ gender: dim0>0 -> female (calibrated on 6 known faces). age: dim2*100 years. chi
 from ..gpu import make_session
 import os, cv2, numpy as np, onnxruntime as ort
 
-MODEL = os.path.join(os.path.dirname(__file__), 'models', 'genderage.onnx')
+from .model_store import model_path as _model_path
+MODEL_NAME = 'genderage.onnx'
 
 _cache = {}
 _lock = __import__('threading').Lock()
@@ -15,7 +16,7 @@ def get_session():
         if 's' not in _cache:
             so = ort.SessionOptions()
             so.graph_optimization_level = ort.GraphOptimizationLevel.ORT_ENABLE_ALL
-            _cache['s'] = make_session(MODEL, so)
+            _cache['s'] = make_session(_model_path(MODEL_NAME), so)
         return _cache['s']
 
 def classify(bgr, box):

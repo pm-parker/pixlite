@@ -2,6 +2,7 @@
 import { ref, computed } from 'vue'
 import HomePage from './views/HomePage.vue'
 import Workspace from './views/Workspace.vue'
+import ModelBanner from './components/ModelBanner.vue'
 
 const route = ref({ name: 'home' }) // {name:'home'} | {name:'work', projectId}
 
@@ -16,6 +17,7 @@ function goHome() {
 <template>
   <HomePage v-if="route.name === 'home'" @open="openProject" />
   <Workspace v-else-if="route.name === 'work'" :project-id="route.projectId" @back="goHome" />
+  <ModelBanner />
 </template>
 
 <style>

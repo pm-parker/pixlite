@@ -47,9 +47,16 @@ def get_skin_parser():
 class FaceDetector:
     """YuNet (OpenCV DNN): fast face boxes + 5 pts. No mediapipe dependency
     (mp 1.x on py3.14 has broken C dispatcher). Aligned: face_detect node."""
-    MODEL = os.path.join(MODELS_DIR, 'face_detection_yunet_2023mar.onnx')
+    MODEL_NAME = 'face_detection_yunet_2023mar.onnx'
     def __init__(self, max_faces=10, score=0.6):
-        self.det = cv2.FaceDetectorYN.create(self.MODEL, '', (320, 320), score, max_faces)
+        from .model_store import model_path
+        from .models_manifest import check
+        path = model_path(self.MODEL_NAME)
+        reason = check(path, full=False)
+        if reason:   # 与 make_session 一致: 给出可读错误, 而不是 OpenCV parseFile 异常
+            from ..gpu import ModelUnavailable
+            raise ModelUnavailable(self.MODEL_NAME, reason)
+        self.det = cv2.FaceDetectorYN.create(path, '', (320, 320), score, max_faces)
         self.max_faces = max_faces
 
     def __call__(self, bgr):
@@ -97,7 +104,8 @@ class SkinParser:
             8 l_ear,9 r_ear,10 mouth,11 u_lip,12 l_lip,13 hair,14 hat,
             15 ear_r,16 neck_l,17 neck,18 cloth"""
     def __init__(self, model_path=None):
-        path = model_path or os.path.join(MODELS_DIR, 'face_parsing.onnx')
+        from .model_store import model_path as _mp
+        path = model_path or _mp('face_parsing.onnx')
         import onnxruntime as ort
         self.sess = make_session(path)
         self.inp = self.sess.get_inputs()[0].name

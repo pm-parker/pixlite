@@ -7,9 +7,10 @@ img_A=素颜脸, img_B=带妆参考脸 -> fake_A = A 的脸 + B 的妆.
 degree 0..1 控制妆感强度. 无 torch, 纯 onnxruntime CPU.
 """
 from ..gpu import make_session
+from ..perception.model_store import model_path as _model_path
 import os, glob, cv2, numpy as np
 
-MODEL = os.path.join(os.path.dirname(__file__), '..', 'perception', 'models', 'beautygan.onnx')
+MODEL_NAME = 'beautygan.onnx'   # resolved via model_store (bundled dir or PIXLITE_MODELS_DIR)
 REF_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', 'assets', 'makeup_refs'))
 _cache = {}
 
@@ -19,7 +20,7 @@ def get_session():
         import onnxruntime as ort
         so = ort.SessionOptions()
         so.graph_optimization_level = ort.GraphOptimizationLevel.ORT_ENABLE_ALL
-        _cache['s'] = make_session(MODEL, so)
+        _cache['s'] = make_session(_model_path(MODEL_NAME), so)
     return _cache['s']
 
 
@@ -122,7 +123,7 @@ def transfer_makeup(bgr, faces=None, degree=0.7, style=None, level=2):
     妆区: 唇/眼睑(眼影)/眉 用 478pt landmark 定位; 颧骨腮红取唇妆同系色调.
     无脸/无模型时原样返回."""
     d = float(np.clip(degree, 0, 1))
-    if d <= 0 or not os.path.exists(MODEL):
+    if d <= 0 or not os.path.exists(_model_path(MODEL_NAME)):
         return bgr
     prof = INTENSITY_PROFILES[int(level) if level in INTENSITY_PROFILES else 2]
     if faces is None:

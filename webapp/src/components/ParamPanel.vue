@@ -94,7 +94,7 @@ function pickProfile(id) { setVal('color.profile', id) }
 const filters = ref([])
 onMounted(async () => {
   try {
-    filters.value = await fetch('/api/filters', { headers: _h() }).then(r => r.json())
+    filters.value = await fetch('api/filters', { headers: _h() }).then(r => r.json())
   } catch (e) { filters.value = [] }
 })
 
@@ -102,7 +102,7 @@ onMounted(async () => {
 const makeupSuits = ref([])
 onMounted(async () => {
   try {
-    makeupSuits.value = await fetch('/api/makeup_suits', { headers: _h() }).then(r => r.json())
+    makeupSuits.value = await fetch('api/makeup_suits', { headers: _h() }).then(r => r.json())
   } catch (e) { makeupSuits.value = [] }
 })
 const suitOpen = computed(() => val('makeup_suit.suit_id', '') !== '')
@@ -281,7 +281,7 @@ async function onRefFile(ev) {
   if (!f) return
   const fd = new FormData(); fd.append('file', f, f.name)
   try {
-    const r = await fetch('/api/ref', { method: 'POST', body: fd, headers: _h() }).then(r => r.json())
+    const r = await fetch('api/ref', { method: 'POST', body: fd, headers: _h() }).then(r => r.json())
     refInfo.value = r
     setVal('color_match.ref_path', r.path)
   } catch (e) { /* noop */ }

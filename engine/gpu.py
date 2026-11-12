@@ -93,6 +93,13 @@ def get_providers():
         pass
     return ['CPUExecutionProvider']
 
+class ModelUnavailable(RuntimeError):
+    """模型文件缺失/不完整。服务端据此返回 503 + "模型下载中" 提示, 而不是 500。"""
+    def __init__(self, name, reason=''):
+        self.model = name
+        super().__init__(f'模型 {name} 尚未就绪 ({reason}); 正在后台自动下载, 完成后即可使用')
+
+
 def make_session(model_path, sess_options=None):
     """Issue #10: 加载前校验模型 (存在 + 大小与清单一致), 截断/被替换的模型给出明确错误,
     而不是在推理时报晦涩的 ONNX 异常。完整 sha256 校验由 tools/download_models.py 负责;
@@ -101,7 +108,7 @@ def make_session(model_path, sess_options=None):
     from .perception.models_manifest import check
     reason = check(model_path, full=os.environ.get('PIXLITE_VERIFY_MODELS') == 'sha256')
     if reason:
-        raise RuntimeError(f'模型不可用 ({reason}); 请运行 python tools/download_models.py')
+        raise ModelUnavailable(os.path.basename(model_path), reason)
     return ort.InferenceSession(model_path, sess_options, providers=get_providers())
 
 # 飞牛应用市场驱动包名 (引导用户去应用中心装)

@@ -28,3 +28,8 @@ python tools/download_models.py --mirror   # 国内走 hf-mirror.com
 - 手动运行（Actions → Build fnOS package → Run workflow）可勾选同时构建 full 包
 
 本地打包：`python fnpack/build_pkg.py --fnpack /path/to/fnpack [--with-models] [--version X.Y.Z]`，产物在 `dist/`。
+
+### 安装后无需任何手动操作
+
+- **打开方式**：飞牛桌面「PixLite 修图」图标走飞牛统一网关（`/app/fnnas.pixlite/`），登录飞牛即自动认证，不需要连接密钥。直接访问 `http://NAS:8300` 时仍需密钥，管理员从桌面图标打开后点左下角「直连密钥」即可复制。
+- **AI 模型**：`_full.fpk` 内置模型；精简包首次启动后在后台自动下载到应用数据目录（升级保留），国内系统优先走 hf-mirror，断点续传、多源切换、sha256 校验，页面底部显示进度，下载完成后自动可用。

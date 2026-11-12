@@ -69,19 +69,22 @@ def build_web(skip):
 
 
 def write_ui(app_dir, mf):
-    """desktop_uidir=ui: 桌面图标 → 打开 http://<NAS>:<service_port>/"""
+    """desktop_uidir=ui: 桌面图标走飞牛统一网关 /app/<appname>/ (https://developer.fnnas.com/docs/core-concepts/gateway-registration/)
+    fnOS 先校验 NAS 登录态, 再转发到 ${TRIM_APPDEST}/app.sock, 用户无需任何连接密钥。"""
     ui = os.path.join(app_dir, 'ui')
     os.makedirs(os.path.join(ui, 'images'), exist_ok=True)
     shutil.copy(os.path.join(PKG, 'ICON.PNG'), os.path.join(ui, 'images', 'icon_64.png'))
     shutil.copy(os.path.join(PKG, 'ICON_256.PNG'), os.path.join(ui, 'images', 'icon_256.png'))
     entry = mf.get('desktop_applaunchname', mf['appname'] + '.Application')
+    prefix = '/app/' + mf['appname']
     cfg = {'.url': {entry: {
         'title': mf.get('display_name', mf['appname']),
         'icon': 'images/icon_{0}.png',
-        'type': 'url',
-        'protocol': 'http',
-        'port': mf.get('service_port', '8300'),
-        'url': '/',
+        'type': 'url',               # 新标签页打开 (修图工作台需要完整窗口)
+        'protocol': '',              # 网关入口忽略 protocol/port, 沿用当前访问域名
+        'gatewayPrefix': prefix,
+        'gatewaySocket': 'app.sock',
+        'url': prefix + '/',
         'allUsers': True,
     }}}
     with open(os.path.join(ui, 'config'), 'w', encoding='utf-8') as fh:
@@ -148,7 +151,8 @@ def main():
     # 结构校验
     problems = []
     for f in ['manifest', 'ICON.PNG', 'ICON_256.PNG', 'cmd/main', 'config/privilege', 'config/resource',
-              'app/ui/config', 'app/server/web/index.html', 'app/server/api/main.py',
+              'app/ui/config', 'app/server/web/index.html', 'app/server/api/main.py', 'app/server/run.py',
+              'app/engine/perception/model_store.py', 'app/engine/perception/models_manifest.py',
               'app/engine/pipeline/__init__.py', 'app/tools/download_models.py', 'app/requirements.txt']:
         if not os.path.isfile(os.path.join(stage, f)):
             problems.append(f'{f} 缺失')
@@ -157,6 +161,12 @@ def main():
             json.load(open(os.path.join(stage, f), encoding='utf-8'))
         except Exception as e:
             problems.append(f'{f} 不是合法 JSON: {e}')
+    try:
+        ent = next(iter(json.load(open(os.path.join(stage, 'app/ui/config'), encoding='utf-8'))['.url'].values()))
+        if ent.get('gatewaySocket') != 'app.sock' or not ent.get('gatewayPrefix', '').startswith('/app/'):
+            problems.append('app/ui/config 未配置统一网关入口')
+    except Exception as e:
+        problems.append(f'app/ui/config 解析失败: {e}')
     n_lut = len(glob.glob(os.path.join(app, 'lut', 'Filters', '*', 'filter.png')))
     if n_lut == 0:
         problems.append('app/lut/Filters 下没有 LUT')

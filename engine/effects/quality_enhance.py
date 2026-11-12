@@ -1,16 +1,17 @@
 """QualityEnhance — Real-ESRGAN x2 超分 + 细节重建 (对标像素蛋糕"画质修复/超清画质").
 degree 控制: 0=原图, 1=全超分回贴; 分块处理防大图 OOM."""
 from ..gpu import make_session
+from ..perception.model_store import model_path as _model_path
 import os, cv2, numpy as np, onnxruntime as ort
 
-MODEL = os.path.join(os.path.dirname(__file__), '..', 'perception', 'models', 'real_esrgan_x2_fp16.onnx')
+MODEL_NAME = 'real_esrgan_x2_fp16.onnx'   # resolved via model_store (bundled dir or PIXLITE_MODELS_DIR)
 _cache = {}
 
 def get_session():
     if 's' not in _cache:
         so = ort.SessionOptions()
         so.graph_optimization_level = ort.GraphOptimizationLevel.ORT_ENABLE_ALL
-        _cache['s'] = make_session(MODEL, so)
+        _cache['s'] = make_session(_model_path(MODEL_NAME), so)
     return _cache['s']
 
 def _in_dtype():

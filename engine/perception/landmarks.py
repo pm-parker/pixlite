@@ -8,7 +8,8 @@ from ..gpu import make_session
 import numpy as np, cv2, os
 
 MODELS_DIR = os.path.join(os.path.dirname(__file__), 'models')
-LANDMARK_MODEL = os.path.join(MODELS_DIR, 'face_landmarks.onnx')
+from .model_store import model_path as _model_path
+LANDMARK_MODEL_NAME = 'face_landmarks.onnx'
 _sess_cache = None
 
 
@@ -16,7 +17,7 @@ def _sess():
     global _sess_cache
     if _sess_cache is None:
         import onnxruntime as ort
-        _sess_cache = make_session(LANDMARK_MODEL)
+        _sess_cache = make_session(_model_path(LANDMARK_MODEL_NAME))
     return _sess_cache
 
 

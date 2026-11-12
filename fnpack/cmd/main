@@ -9,9 +9,11 @@ PORT="${TRIM_SERVICE_PORT:-8300}"
 export PATH="/var/apps/python312/target/bin:${PATH}"
 export PIXLITE_WORK_DIR="${TRIM_PKGVAR}/work"
 export PIXLITE_LUT_DIR="${TRIM_APPDEST}/lut/Filters"
-# Issue #1: 服务绑定 0.0.0.0, 未配置 token 时服务端会拒绝所有非本机请求 (fail closed)。
-# 系统未下发 TRIM_SERVICE_TOKEN 时, 首次启动生成随机强 token 持久化到 var/api_token (0600),
-# 用户在 应用首页 → 连接密钥 中填写该值即可远程访问。
+# 访问认证 (用户零操作):
+# - 桌面图标走飞牛统一网关 /app/fnnas.pixlite → fnOS 校验 NAS 登录态 → 转发到 ${TRIM_APPDEST}/app.sock;
+#   经该 socket 的请求免密钥。
+# - 直连 :8300 端口仍需 token (防局域网内未登录访问)。token 首次启动自动生成到 var/api_token (0600),
+#   管理员从桌面图标打开后点左下角「直连密钥」即可复制, 无需 SSH。
 TOKEN_FILE="${TRIM_PKGVAR}/api_token"
 if [ -n "${TRIM_SERVICE_TOKEN:-}" ]; then
     export PIXLITE_TOKEN="${TRIM_SERVICE_TOKEN}"
@@ -21,6 +23,11 @@ else
     fi
     export PIXLITE_TOKEN="$(tr -d ' \n\r' < "${TOKEN_FILE}")"
 fi
+export PIXLITE_GATEWAY_SOCKET="${TRIM_APPDEST}/app.sock"
+# AI 模型: full 包内置的直接使用; 精简包缺失的由服务启动后在后台自动下载到 var/models
+# (升级保留, 断点续传, 国内系统优先 hf-mirror, sha256 校验), 用户无需任何操作
+export PIXLITE_MODELS_DIR="${TRIM_PKGVAR}/models"
+export PIXLITE_GATEWAY_PREFIX="/app/${TRIM_APPNAME:-fnnas.pixlite}"
 export PIXLITE_ALLOWED_ROOTS="${PIXLITE_ALLOWED_ROOTS:-$(ls -d /vol[0-9]* 2>/dev/null | tr '\n' ':')/var/apps/fnnas.pixlite/share:${TRIM_PKGVAR}/work}"
 if [ -f "${TRIM_PKGVAR}/gpu_ep.conf" ]; then
     export PIXLITE_EP="$(tr -d '\n' < "${TRIM_PKGVAR}/gpu_ep.conf")"
@@ -39,7 +46,7 @@ status() {
         if check_process "$pid"; then return 0; else rm -f "${PID_FILE}"; fi
     fi
     # 兜底: pid 丢了但进程还在
-    pgrep -f "uvicorn server.api.main:app" > /dev/null 2>&1
+    pgrep -f "server.run --port ${PORT}" > /dev/null 2>&1
 }
 
 # 失败时把诊断包导出到共享文件夹 AI/pixlite-logs/ (用户可直接从文件管理看到并转发)
@@ -152,7 +159,7 @@ start_process() {
     fi
     log_msg "start: PY=${PY} PYTHONPATH=${PYTHONPATH} PORT=${PORT} EP=${PIXLITE_EP}"
     cd "${APP_DIR}" || { log_msg "FAILED: cd ${APP_DIR}"; return 1; }
-    nohup "${PY}" -m uvicorn server.api.main:app --host 0.0.0.0 --port "${PORT}" \
+    nohup "${PY}" -m server.run --port "${PORT}" --uds "${PIXLITE_GATEWAY_SOCKET}" \
         >> "${LOG_FILE}" 2>&1 &
     printf "%s" "$!" > "${PID_FILE}"
     # 等真起来 (最多 25s): 模型 import 慢, 死了立刻报

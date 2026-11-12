@@ -2,14 +2,14 @@ import { reactive, watch } from 'vue'
 
 /* ---------- API 封装 ---------- */
 export const API = {
-  presets: () => fetch('/api/presets', { headers: _h() }).then(r => r.json()),
-  browse: (path = '') => fetch(`/api/browse?path=${encodeURIComponent(path)}`, { headers: _h() }).then(r => r.json()),
+  presets: () => fetch('api/presets', { headers: _h() }).then(r => r.json()),
+  browse: (path = '') => fetch(`api/browse?path=${encodeURIComponent(path)}`, { headers: _h() }).then(r => r.json()),
   upload: (file) => {
     const fd = new FormData(); fd.append('file', file)
-    return fetch('/api/upload', { method: 'POST', body: fd, headers: _h() }).then(r => r.json())
+    return fetch('api/upload', { method: 'POST', body: fd, headers: _h() }).then(r => r.json())
   },
-  filterThumbUrl: (fid) => `/api/filter-thumb/${encodeURIComponent(fid)}${apiKey() ? '?key=' + apiKey() : ''}`,
-  imageUrl: (absPath) => `/api/image?path=${encodeURIComponent(absPath)}${apiKey() ? '&key=' + apiKey() : ''}`,
+  filterThumbUrl: (fid) => `api/filter-thumb/${encodeURIComponent(fid)}${apiKey() ? '?key=' + apiKey() : ''}`,
+  imageUrl: (absPath) => `api/image?path=${encodeURIComponent(absPath)}${apiKey() ? '&key=' + apiKey() : ''}`,
   async retouch(file, preset, overrides, routing, person) {
     const fd = new FormData()
     fd.append('file', file, file.name)
@@ -17,14 +17,18 @@ export const API = {
     if (overrides && Object.keys(overrides).length) fd.append('overrides', JSON.stringify(overrides))
     if (routing && Object.keys(routing).length) fd.append('routing', JSON.stringify(routing))
     if (person) fd.append('person', person)
-    const resp = await fetch('/api/retouch', { method: 'POST', body: fd, headers: _h() })
+    const resp = await fetch('api/retouch', { method: 'POST', body: fd, headers: _h() })
     const data = await resp.json()
+    if (data.models_pending) Object.assign(modelState, data, { checked: true, ready: false })
     if (!resp.ok) throw new Error(data.error || `精修请求失败(${resp.status})`)
     return data.job
   },
-  job: (id) => fetch(`/api/job/${id}`, { headers: _h() }).then(r => r.json()),
-  gpu: () => fetch('/api/gpu', { headers: _h() }).then(r => r.json()),
-  resultUrl: (id) => `/api/result/${id}${apiKey() ? '?key=' + apiKey() : ''}`,
+  job: (id) => fetch(`api/job/${id}`, { headers: _h() }).then(r => r.json()),
+  gpu: () => fetch('api/gpu', { headers: _h() }).then(r => r.json()),
+  authInfo: () => fetch('api/auth/info', { headers: _h() }).then(r => r.json()),
+  modelsStatus: () => fetch('api/models/status', { headers: _h() }).then(r => r.json()),
+  modelsRetry: () => fetch('api/models/retry', { method: 'POST', headers: _h() }).then(r => r.json()),
+  resultUrl: (id) => `api/result/${id}${apiKey() ? '?key=' + apiKey() : ''}`,
   poll: (id, onProgress, interval = 400, timeoutMs = 300000) => new Promise((resolve, reject) => {
     const bail = (fn, arg) => { clearInterval(t); clearTimeout(guard); fn(arg) }
     const guard = setTimeout(() => bail(reject, new Error('精修超时（服务无响应 5 分钟）')), timeoutMs)
@@ -42,18 +46,19 @@ export const API = {
     fd.append('src_dir', srcDir); fd.append('preset', preset)
     if (dstDir) fd.append('dst_dir', dstDir)
     fd.append('recursive', recursive); fd.append('workers', workers)
-    const resp = await fetch('/api/batch', { method: 'POST', body: fd, headers: _h() })
+    const resp = await fetch('api/batch', { method: 'POST', body: fd, headers: _h() })
     const data = await resp.json().catch(() => ({}))
+    if (data.models_pending) Object.assign(modelState, data, { checked: true, ready: false })
     if (!resp.ok) throw new Error(data.error || `批量请求失败(${resp.status})`)
     return data
   },
   batchStatus: async (id) => {
-    const resp = await fetch(`/api/batch/${id}`, { headers: _h() })
+    const resp = await fetch(`api/batch/${id}`, { headers: _h() })
     const data = await resp.json().catch(() => ({}))
     if (!resp.ok && resp.status !== 404) throw new Error(data.error || `批量状态获取失败(${resp.status})`)
     return data
   },
-  batchCancel: (id) => fetch(`/api/batch/${id}/cancel`, { method: 'POST', headers: _h() }).then(r => r.json()),
+  batchCancel: (id) => fetch(`api/batch/${id}/cancel`, { method: 'POST', headers: _h() }).then(r => r.json()),
 }
 
 /* ---------- 项目模型（localStorage 持久化） ----------
@@ -75,6 +80,25 @@ function load() {
 export const apiKey = () => localStorage.getItem('pixlite_api_key') || ''
 export const _h = () => apiKey() ? { 'X-API-Key': apiKey() } : {}
 
+/* 连接认证状态 (见 server/api/main.py /api/health):
+   gateway  = 从飞牛桌面图标经统一网关打开, 已由 NAS 登录态认证, 无需任何密钥
+   local    = 本机访问
+   token    = 直连 :8300 端口, 需要连接密钥
+   disabled = 服务未配置密钥, 仅允许本机访问 */
+export const authState = reactive({ mode: '', checked: false })
+export async function refreshAuth() {
+  try {
+    const r = await fetch('api/health').then(r => r.json())
+    authState.mode = r.auth || ''
+  } catch (e) { authState.mode = '' }
+  authState.checked = true
+  return authState.mode
+}
+/* AI 模型自动下载状态 (见 components/ModelBanner.vue, server /api/models/status) */
+export const modelState = reactive({ checked: false, ready: true, phase: '', percent: 0,
+  done_bytes: 0, total_bytes: 0, speed_bps: 0, error: '' })
+export const needsKey = () => authState.mode === 'token' || authState.mode === 'disabled'
+
 /* ---------- 前端错误收集 (诊断转发用) ---------- */
 const _errBuf = []
 export function trackError(msg, ctx = '') {
@@ -91,7 +115,7 @@ if (typeof window !== 'undefined') {
 export async function buildDebugReport() {
   let env = null
   try {
-    const r = await fetch('/api/debug/report?frontend_events=' + encodeURIComponent(JSON.stringify(getErrors())), { headers: _h() })
+    const r = await fetch('api/debug/report?frontend_events=' + encodeURIComponent(JSON.stringify(getErrors())), { headers: _h() })
     env = await r.json()
   } catch (e) { trackError('诊断接口失败: ' + e.message, 'debug') }
   const lines = []
