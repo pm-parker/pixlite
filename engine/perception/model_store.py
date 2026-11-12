@@ -11,7 +11,14 @@
 
 Pure stdlib so tools/download_models.py can use it before numpy/cv2 are installed.
 """
-import os, sys, time, shutil, threading, urllib.request, urllib.error, importlib.util
+import importlib.util
+import os
+import shutil
+import sys
+import threading
+import time
+import urllib.error
+import urllib.request
 
 _HERE = os.path.dirname(os.path.abspath(__file__))
 
@@ -19,6 +26,8 @@ _HERE = os.path.dirname(os.path.abspath(__file__))
 def _load_manifest():
     spec = importlib.util.spec_from_file_location('pixlite_models_manifest',
                                                   os.path.join(_HERE, 'models_manifest.py'))
+    if spec is None or spec.loader is None:
+        raise ImportError('models_manifest.py not found next to model_store.py')
     m = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(m)
     return m
@@ -64,7 +73,7 @@ def sources(name):
 class _State:
     def __init__(self):
         self.lock = threading.Lock()
-        self.thread = None
+        self.thread: threading.Thread | None = None
         self.models = {}          # name -> {state, done, total, error, source}
         self.phase = 'idle'       # idle | checking | downloading | ready | failed
         self.error = ''
@@ -118,10 +127,12 @@ def status():
 def _fetch(url, part, name, timeout):
     """Download url into part, resuming from its current size. Returns final size."""
     have = os.path.getsize(part) if os.path.exists(part) else 0
-    req = urllib.request.Request(url, headers={'User-Agent': 'PixLite-model-fetch/1.0'})
+    if not url.startswith(('http://', 'https://')):   # S310: 只允许 http(s) 模型源
+        raise ValueError(f'unsupported model url scheme: {url.split(":")[0]}')
+    req = urllib.request.Request(url, headers={'User-Agent': 'PixLite-model-fetch/1.0'})  # noqa: S310 — url 来自 models_manifest 静态清单，scheme 已白名单校验
     if have:
         req.add_header('Range', f'bytes={have}-')
-    with urllib.request.urlopen(req, timeout=timeout) as r:
+    with urllib.request.urlopen(req, timeout=timeout) as r:  # noqa: S310 — scheme 已白名单校验
         if have and r.status != 206:          # server ignored Range: restart
             have = 0
         mode = 'ab' if have else 'wb'
@@ -158,7 +169,7 @@ def download_one(name, dest_dir=None, attempts=3, timeout=60, log=print):
                 if size > spec['size']:
                     raise ValueError(f'size {size} > expected {spec["size"]}')
                 if size < spec['size']:
-                    raise IOError(f'incomplete {size}/{spec["size"]}')
+                    raise OSError(f'incomplete {size}/{spec["size"]}')
                 digest = sha256_of(part)
                 if digest != spec['sha256']:
                     os.remove(part)               # corrupt / tampered: never resume from it

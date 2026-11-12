@@ -1,13 +1,18 @@
 """Perception layer — aligned with PixCake TSAI detection layer.
 face mesh 478pts + pose + parsing + matting, all local ONNX/MediaPipe."""
-from ..gpu import make_session
-import numpy as np, cv2, os, hashlib
+import hashlib
+import os
+import threading
 from collections import OrderedDict
+
+import cv2
+import numpy as np
+
+from ..gpu import make_session
 
 MODELS_DIR = os.path.join(os.path.dirname(__file__), 'models')
 
 _detector_cache = {}
-import threading
 _tls = threading.local()
 def get_face_detector():
     """Per-thread FaceDetector: cv2.dnn Net is NOT thread-safe; batch workers
@@ -26,7 +31,7 @@ PARSE_CACHE_MAX = 4
 
 def cached_parse(parser, bgr):
     # key 含 shape: 相同字节、不同宽高的图 (如转置) 否则会命中错误尺寸的 parsing
-    h = hashlib.sha1(repr(bgr.shape).encode() + np.ascontiguousarray(bgr).tobytes()).hexdigest()
+    h = hashlib.sha256(repr(bgr.shape).encode() + np.ascontiguousarray(bgr).tobytes()).hexdigest()
     with _parse_result_lock:
         hit = _parse_result_cache.get(h)
         if hit is not None:
@@ -79,9 +84,12 @@ def _nms_faces(faces, iou_thr=0.3):
     """YuNet 常对同一张脸吐多个高重叠框 — 去重, 否则 facesurgery 逐框
     做全图位移场, 时间 ×N (实测 8 框 23s → 1 框 2.8s)。"""
     def iou(a, b):
-        ax, ay, aw, ah = a['box']; bx, by, bw, bh = b['box']
-        x1 = max(ax, bx); y1 = max(ay, by)
-        x2 = min(ax + aw, bx + bw); y2 = min(ay + ah, by + bh)
+        ax, ay, aw, ah = a['box']
+        bx, by, bw, bh = b['box']
+        x1 = max(ax, bx)
+        y1 = max(ay, by)
+        x2 = min(ax + aw, bx + bw)
+        y2 = min(ay + ah, by + bh)
         inter = max(0, x2 - x1) * max(0, y2 - y1)
         return inter / (aw * ah + bw * bh - inter + 1e-6)
     fs = sorted(faces, key=lambda f: -f['score'])
@@ -94,7 +102,8 @@ def _nms_faces(faces, iou_thr=0.3):
 def estimate_head_yaw(landmarks):
     """Aligned: FaceSurgery normal/side profile switch (AngleRange)."""
     L, R, N = landmarks[33], landmarks[263], landmarks[1]
-    d_lr = R[0] - L[0]; d_ln = N[0] - L[0]
+    d_lr = R[0] - L[0]
+    d_ln = N[0] - L[0]
     ratio = d_ln / max(d_lr, 1e-6)
     return ratio  # ~0.5 frontal, toward 0/1 = side
 
@@ -106,7 +115,6 @@ class SkinParser:
     def __init__(self, model_path=None):
         from .model_store import model_path as _mp
         path = model_path or _mp('face_parsing.onnx')
-        import onnxruntime as ort
         self.sess = make_session(path)
         self.inp = self.sess.get_inputs()[0].name
 
@@ -115,7 +123,7 @@ class SkinParser:
         x = cv2.resize(rgb, (512, 512)).astype(np.float32) / 255.0
         x = (x - [0.485, 0.456, 0.406]) / [0.229, 0.224, 0.225]
         x = x.transpose(2, 0, 1)[None].astype(np.float32)
-        logits = self.sess.run(None, {self.inp: x})[0][0]
+        logits = np.asarray(self.sess.run(None, {self.inp: x})[0])[0]
         seg = logits.argmax(0).astype(np.uint8)
         return cv2.resize(seg, (bgr.shape[1], bgr.shape[0]), interpolation=cv2.INTER_NEAREST)
 

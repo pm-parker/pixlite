@@ -1,8 +1,11 @@
 """QualityEnhance — Real-ESRGAN x2 超分 + 细节重建 (对标像素蛋糕"画质修复/超清画质").
 degree 控制: 0=原图, 1=全超分回贴; 分块处理防大图 OOM."""
+import cv2
+import numpy as np
+import onnxruntime as ort
+
 from ..gpu import make_session
 from ..perception.model_store import model_path as _model_path
-import os, cv2, numpy as np, onnxruntime as ort
 
 MODEL_NAME = 'real_esrgan_x2_fp16.onnx'   # resolved via model_store (bundled dir or PIXLITE_MODELS_DIR)
 _cache = {}
@@ -33,7 +36,7 @@ def _tile_forward(bgr, tile=256, scale=2):
             # 下载脚本给的是 fp16 模型, 旧代码喂 float32 → INVALID_ARGUMENT, 画质修复整单失败
             t = bgr[y1:y2, x1:x2, ::-1].astype(np.float32) / 255.0
             t = np.ascontiguousarray(t.transpose(2, 0, 1)[None]).astype(_in_dtype())
-            r = get_session().run(None, {'input': t})[0][0].astype(np.float32)  # 3,s*2,s*2
+            r = np.asarray(get_session().run(None, {'input': t})[0])[0].astype(np.float32)  # 3,s*2,s*2
             r = r.transpose(1, 2, 0)[..., ::-1]
             Y, X = y1 * scale, x1 * scale
             out[Y:Y + r.shape[0], X:X + r.shape[1]] += r
@@ -49,17 +52,14 @@ def enhance_quality(bgr, degree=0.7, max_side=2048):
     H, W = bgr.shape[:2]
     # 限边: 大图先缩到 max_side 再超分, 防 CPU 巨耗时
     proc = bgr
-    pw, ph = W, H
     if max(H, W) > max_side:
         sc = max_side / max(H, W)
         proc = cv2.resize(bgr, (int(W * sc), int(H * sc)), interpolation=cv2.INTER_AREA)
-        pw, ph = proc.shape[1], proc.shape[0]
     up = _tile_forward(proc)
     # 回贴原分辨率（超分带来的锐利细节保留在降采样中）
     up_orig = cv2.resize(up, (W, H), interpolation=cv2.INTER_AREA)
     # 细节层混合: 高频来自超分, 低频保持原图(不偏色)
     blur_up = cv2.GaussianBlur(up_orig, (0, 0), 3.0)
-    blur_o = cv2.GaussianBlur(bgr, (0, 0), 3.0)
     detail = up_orig.astype(np.float32) - blur_up.astype(np.float32)
     out = (bgr.astype(np.float32) + detail * degree).clip(0, 255).astype(np.uint8)
     return out

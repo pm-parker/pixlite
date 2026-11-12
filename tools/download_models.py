@@ -15,13 +15,17 @@ Usage:
     python tools/download_models.py --mirror     # try mirrors first (CN network)
     python tools/download_models.py --verify     # only verify existing files, no download
 """
-import os, sys, argparse, importlib.util
+import argparse
+import importlib.util
+import os
+import sys
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(HERE)
 # 按文件加载, 不经过 engine.perception/__init__ (其依赖 numpy/cv2/onnxruntime)
 _spec = importlib.util.spec_from_file_location(
     'pixlite_model_store', os.path.join(ROOT, 'engine', 'perception', 'model_store.py'))
+assert _spec is not None and _spec.loader is not None, 'model_store.py 无法加载'
 store = importlib.util.module_from_spec(_spec)
 _spec.loader.exec_module(store)
 
@@ -34,32 +38,36 @@ def main():
     a = ap.parse_args()
     if a.mirror:
         os.environ['PIXLITE_MODEL_MIRROR_FIRST'] = '1'
-    os.makedirs(a.dir, exist_ok=True)
-    fails = []
-    for name in store.MODELS:
-        dst = os.path.join(a.dir, name)
-        if os.path.exists(dst):
-            reason = store.check(dst, full=True)
-            if reason is None:
-                print(f'[{name}] exists, verified')
+    try:
+        os.makedirs(a.dir, exist_ok=True)
+        fails = []
+        for name in store.MODELS:
+            dst = os.path.join(a.dir, name)
+            if os.path.exists(dst):
+                reason = store.check(dst, full=True)
+                if reason is None:
+                    print(f'[{name}] exists, verified')
+                    continue
+                print(f'[{name}] invalid ({reason})' + ('' if a.verify else ', re-downloading'))
+                if not a.verify:
+                    os.remove(dst)
+            elif a.verify:
+                print(f'[{name}] missing')
+            if a.verify:
+                fails.append(name)
                 continue
-            print(f'[{name}] invalid ({reason})' + ('' if a.verify else ', re-downloading'))
-            if not a.verify:
-                os.remove(dst)
-        elif a.verify:
-            print(f'[{name}] missing')
-        if a.verify:
-            fails.append(name)
-            continue
-        try:
-            store.download_one(name, dest_dir=a.dir)
-        except Exception as e:
-            print(f'[{name}] FAILED: {e}')
-            fails.append(name)
-    if fails:
-        print('FAILED:', ', '.join(fails))
+            try:
+                store.download_one(name, dest_dir=a.dir)
+            except Exception as e:
+                print(f'[{name}] FAILED: {e}')
+                fails.append(name)
+        if fails:
+            print('FAILED:', ', '.join(fails))
+            sys.exit(1)
+        print('All models ready:', os.path.abspath(a.dir))
+    except OSError as e:
+        print(f'ERROR: 模型目录不可用: {e}')
         sys.exit(1)
-    print('All models ready:', os.path.abspath(a.dir))
 
 
 if __name__ == '__main__':

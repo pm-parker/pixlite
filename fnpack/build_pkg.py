@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """组装飞牛 fnOS 应用目录并用官方 fnpack 打成 .fpk (本地与 GitHub Actions 共用)。
 
 用法:
@@ -21,7 +20,15 @@
    (默认 dist/), 文件名 <appname>_<version>[_full].fpk; 找不到 fnpack 只组装目录
 5. 结构校验失败或 fnpack 失败时非零退出
 """
-import os, sys, shutil, subprocess, glob, json, re, argparse
+import argparse
+import glob
+import json
+import os
+import re
+import shutil
+import subprocess
+import sys
+from typing import NoReturn
 
 SRC = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 PKG = os.path.join(SRC, 'fnpack')
@@ -33,26 +40,38 @@ META = ['manifest', 'ICON.PNG', 'ICON_256.PNG', 'cmd', 'config', 'wizard']
 CODE = ['server', 'engine', 'presets', 'tools']
 
 
-def die(msg):
+def die(msg) -> NoReturn:
     print('ERROR:', msg)
     sys.exit(1)
 
 
 def read_manifest(path):
     kv = {}
-    for line in open(path, encoding='utf-8'):
-        if '=' in line:
-            k, v = line.split('=', 1)
-            kv[k.strip()] = v.strip()
+    try:
+        with open(path, encoding='utf-8') as fh:
+            for line in fh:
+                if '=' in line:
+                    k, v = line.split('=', 1)
+                    kv[k.strip()] = v.strip()
+    except OSError as e:
+        die(f'manifest 不可读: {path} ({e})')
     return kv
 
 
 def set_manifest_version(path, version):
-    s = open(path, encoding='utf-8').read()
+    try:
+        with open(path, encoding='utf-8') as fh:
+            s = fh.read()
+    except OSError as e:
+        die(f'staged manifest 不可读: {path} ({e})')
     s, n = re.subn(r'^(version\s*=\s*).*$', lambda m: m.group(1) + version, s, flags=re.M)
     if n != 1:
         die('manifest 中没有 version 字段')
-    open(path, 'w', encoding='utf-8').write(s)
+    try:
+        with open(path, 'w', encoding='utf-8') as fh:
+            fh.write(s)
+    except OSError as e:
+        die(f'staged manifest 不可写: {path} ({e})')
 
 
 def build_web(skip):
@@ -72,9 +91,12 @@ def write_ui(app_dir, mf):
     """desktop_uidir=ui: 桌面图标走飞牛统一网关 /app/<appname>/ (https://developer.fnnas.com/docs/core-concepts/gateway-registration/)
     fnOS 先校验 NAS 登录态, 再转发到 ${TRIM_APPDEST}/app.sock, 用户无需任何连接密钥。"""
     ui = os.path.join(app_dir, 'ui')
-    os.makedirs(os.path.join(ui, 'images'), exist_ok=True)
-    shutil.copy(os.path.join(PKG, 'ICON.PNG'), os.path.join(ui, 'images', 'icon_64.png'))
-    shutil.copy(os.path.join(PKG, 'ICON_256.PNG'), os.path.join(ui, 'images', 'icon_256.png'))
+    try:
+        os.makedirs(os.path.join(ui, 'images'), exist_ok=True)
+        shutil.copy(os.path.join(PKG, 'ICON.PNG'), os.path.join(ui, 'images', 'icon_64.png'))
+        shutil.copy(os.path.join(PKG, 'ICON_256.PNG'), os.path.join(ui, 'images', 'icon_256.png'))
+    except OSError as e:
+        die(f'复制图标失败: {e}')
     entry = mf.get('desktop_applaunchname', mf['appname'] + '.Application')
     prefix = '/app/' + mf['appname']
     cfg = {'.url': {entry: {
@@ -87,13 +109,22 @@ def write_ui(app_dir, mf):
         'url': prefix + '/',
         'allUsers': True,
     }}}
-    with open(os.path.join(ui, 'config'), 'w', encoding='utf-8') as fh:
-        json.dump(cfg, fh, ensure_ascii=False, indent=4)
+    try:
+        with open(os.path.join(ui, 'config'), 'w', encoding='utf-8') as fh:
+            json.dump(cfg, fh, ensure_ascii=False, indent=4)
+    except (OSError, ValueError) as e:
+        die(f'写入 ui/config 失败: {e}')
 
 
 def find_fnpack(arg):
     for c in (arg, os.environ.get('FNPACK'), shutil.which('fnpack')):
-        if c and os.path.isfile(c) and os.access(c, os.X_OK):
+        if not c or not os.path.isfile(c):
+            continue
+        try:
+            executable = os.access(c, os.X_OK)
+        except OSError:
+            executable = False
+        if executable:
             return c
     return None
 
@@ -118,35 +149,50 @@ def main():
     if LUT_SRC:   # 可选: 从外部目录刷新仓库自带 LUT
         if not os.path.isdir(LUT_SRC):
             die(f'PIXLITE_LUT_SRC 不存在: {LUT_SRC}')
-        if os.path.exists(LUT_REPO):
-            shutil.rmtree(LUT_REPO)
-        shutil.copytree(LUT_SRC, LUT_REPO)
+        try:
+            if os.path.exists(LUT_REPO):
+                shutil.rmtree(LUT_REPO)
+            shutil.copytree(LUT_SRC, LUT_REPO)
+        except OSError as e:
+            die(f'刷新 LUT 失败: {e}')
 
     mf = read_manifest(os.path.join(PKG, 'manifest'))
     appname = mf['appname']
     stage = os.path.join(BUILD, appname)
-    if os.path.exists(stage):
-        shutil.rmtree(stage)
-    os.makedirs(stage)
-    for m in META:
-        s = os.path.join(PKG, m)
-        (shutil.copytree if os.path.isdir(s) else shutil.copy)(s, os.path.join(stage, m))
+    try:
+        if os.path.exists(stage):
+            shutil.rmtree(stage)
+        os.makedirs(stage)
+    except OSError as e:
+        die(f'准备打包目录失败: {e}')
+    try:
+        for m in META:
+            s = os.path.join(PKG, m)
+            (shutil.copytree if os.path.isdir(s) else shutil.copy)(s, os.path.join(stage, m))
+    except OSError as e:
+        die(f'复制元数据失败: {e}')
     for f in glob.glob(os.path.join(stage, 'cmd', '*')):
-        os.chmod(f, 0o755)
+        os.chmod(f, 0o755)  # noqa: S103 — cmd/* 是安装器直接执行的钩子脚本，必须有执行位
     if a.version:
         set_manifest_version(os.path.join(stage, 'manifest'), a.version)
     version = read_manifest(os.path.join(stage, 'manifest'))['version']
 
     app = os.path.join(stage, 'app')
     ignore = shutil.ignore_patterns('__pycache__', '*.pyc', 'work', '*.map', '*.part', '.DS_Store')
-    for d in CODE:
-        shutil.copytree(os.path.join(SRC, d), os.path.join(app, d), ignore=ignore)
-    shutil.copy(os.path.join(PKG, 'requirements.txt'), os.path.join(app, 'requirements.txt'))
-    shutil.copytree(LUT_REPO, os.path.join(app, 'lut', 'Filters'), ignore=ignore)
+    try:
+        for d in CODE:
+            shutil.copytree(os.path.join(SRC, d), os.path.join(app, d), ignore=ignore)
+        shutil.copy(os.path.join(PKG, 'requirements.txt'), os.path.join(app, 'requirements.txt'))
+        shutil.copytree(LUT_REPO, os.path.join(app, 'lut', 'Filters'), ignore=ignore)
+    except OSError as e:
+        die(f'复制代码到 app/ 失败: {e}')
     models_dst = os.path.join(app, 'engine', 'perception', 'models')
     if not a.with_models:
-        for p in glob.glob(os.path.join(models_dst, '*.onnx')):
-            os.remove(p)
+        try:
+            for p in glob.glob(os.path.join(models_dst, '*.onnx')):
+                os.remove(p)
+        except OSError as e:
+            die(f'清理内置模型失败: {e}')
     write_ui(app, mf)
 
     # 结构校验
@@ -159,11 +205,13 @@ def main():
             problems.append(f'{f} 缺失')
     for f in ['config/privilege', 'config/resource', 'app/ui/config']:
         try:
-            json.load(open(os.path.join(stage, f), encoding='utf-8'))
+            with open(os.path.join(stage, f), encoding='utf-8') as fh:
+                json.load(fh)
         except Exception as e:
             problems.append(f'{f} 不是合法 JSON: {e}')
     try:
-        ent = next(iter(json.load(open(os.path.join(stage, 'app/ui/config'), encoding='utf-8'))['.url'].values()))
+        with open(os.path.join(stage, 'app/ui/config'), encoding='utf-8') as fh:
+            ent = next(iter(json.load(fh)['.url'].values()))
         if ent.get('gatewaySocket') != 'app.sock' or not ent.get('gatewayPrefix', '').startswith('/app/'):
             problems.append('app/ui/config 未配置统一网关入口')
     except Exception as e:
@@ -182,13 +230,16 @@ def main():
         print('fnpack 未找到 (--fnpack / $FNPACK / PATH), 只组装目录, 未生成 .fpk')
         return
     subprocess.run([fp, 'build', '--directory', stage], cwd=BUILD, check=True)
-    produced = [p for p in glob.glob(os.path.join(BUILD, '*.fpk')) + glob.glob(os.path.join(stage, '*.fpk'))]
+    produced = list(glob.glob(os.path.join(BUILD, '*.fpk')) + glob.glob(os.path.join(stage, '*.fpk')))
     if not produced:
         die('fnpack 未生成 .fpk')
-    os.makedirs(a.out, exist_ok=True)
     name = f'{appname}_{version}{"_full" if a.with_models else ""}.fpk'
     dst = os.path.join(a.out, name)
-    shutil.move(max(produced, key=os.path.getmtime), dst)
+    try:
+        os.makedirs(a.out, exist_ok=True)
+        shutil.move(max(produced, key=os.path.getmtime), dst)
+    except OSError as e:
+        die(f'输出 .fpk 失败: {e}')
     print(f'fpk: {dst} ({os.path.getsize(dst)} bytes)')
 
 

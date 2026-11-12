@@ -2,11 +2,14 @@
 Aligned with PixCake 人物属性: 女/男/儿童/长辈女/长辈男 auto-routing.
 Input: 96x96 RGB face crop (float32, no norm). Output: [female_logit, -female_logit, age/100].
 gender: dim0>0 -> female (calibrated on 6 known faces). age: dim2*100 years. child: age < 14; elder: age > 55."""
-from ..gpu import make_session
-import os, cv2, numpy as np, onnxruntime as ort
+import cv2
+import numpy as np
+import onnxruntime as ort
 
+from ..gpu import make_session
 from .model_store import model_path as _model_path
-MODEL_NAME = 'genderage.onnx'
+
+MODEL_NAME = "genderage.onnx"
 
 _cache = {}
 _lock = __import__('threading').Lock()
@@ -28,7 +31,7 @@ def classify(bgr, box):
         return None
     face = cv2.resize(face, (96, 96))
     rgb = cv2.cvtColor(face, cv2.COLOR_BGR2RGB).astype(np.float32)
-    out = get_session().run(None, {'data': rgb.transpose(2, 0, 1)[None]})[0].flatten()
+    out = np.asarray(get_session().run(None, {'data': rgb.transpose(2, 0, 1)[None]})[0]).flatten()
     male_logit, _female_logit, age_frac = float(out[0]), float(out[1]), float(out[2])
     gender = 'female' if male_logit > 0 else 'male'   # dim0>0=female (calibrated)
     age = max(0.0, min(100.0, age_frac * 100.0))

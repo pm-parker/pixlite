@@ -1,13 +1,15 @@
 """Region fixes — 祛油光/祛黑眼圈/祛眼袋/眼白净化/祛红血丝/唇纹修整 (B-group local CV).
 All ops work on SegFormer parsing masks; ROIs derived by shifting/dilating eye
 and lip masks. LAB L-channel surgery keeps hue natural."""
-import numpy as np, cv2
+import cv2
+import numpy as np
+
 from ..perception import mask_of
 
 
 def _shift(m, dx, dy):
     h, w = m.shape[:2]
-    M = np.float32([[1, 0, dx], [0, 1, dy]])
+    M = np.array([[1, 0, dx], [0, 1, dy]], dtype=np.float32)
     return cv2.warpAffine(m, M, (w, h))
 
 
@@ -26,7 +28,7 @@ def _below_eye_roi(parsing, k0=0.8, k1=1.9):
         if len(ys) == 0:
             continue
         hgt = max(ys.max() - ys.min(), 4)
-        band = _shift(e, 0, int(hgt * k0)) | _shift(e, 0, int(hgt * k1))
+        band = cv2.bitwise_or(_shift(e, 0, int(hgt * k0)), _shift(e, 0, int(hgt * k1)))
         m = cv2.bitwise_or(m, band)
     return cv2.bitwise_and(m, mask_of(parsing, 'skin', dilate=4))
 

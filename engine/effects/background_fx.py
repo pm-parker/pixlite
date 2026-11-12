@@ -1,7 +1,10 @@
 """BackgroundFX — MODNet 人像抠像 + 背景虚化/替换 (对标像素蛋糕"背景"板块: 背景虚化/背景颜色)."""
+import cv2
+import numpy as np
+import onnxruntime as ort
+
 from ..gpu import make_session
 from ..perception.model_store import model_path as _model_path
-import os, cv2, numpy as np, onnxruntime as ort
 
 MODEL_NAME = 'modnet.onnx'   # resolved via model_store (bundled dir or PIXLITE_MODELS_DIR)
 _cache = {}
@@ -24,7 +27,7 @@ def get_alpha(bgr, ref_side=512):
     proc = cv2.resize(canvas, (ref_side, ref_side), interpolation=cv2.INTER_AREA)
     x = proc.astype(np.float32) / 255.0
     x = x.transpose(2, 0, 1)[None]
-    a = get_session().run(None, {'input': x})[0][0, 0]
+    a = np.asarray(get_session().run(None, {'input': x})[0])[0, 0]
     ya, yb = int(y0/side*ref_side), int((y0+H)/side*ref_side)
     xa, xb = int(x0/side*ref_side), int((x0+W)/side*ref_side)
     a = a[ya:yb, xa:xb]

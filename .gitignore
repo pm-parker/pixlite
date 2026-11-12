@@ -16,3 +16,4 @@ tests/raw/
 engine/perception/models/*.onnx
 fnpack/build/
 dist/
+*.part

@@ -34,9 +34,13 @@ DEFAULT_SHIFT = {
 # 信息; 用配方自带 opacity 参与权重, 色用默认板)
 
 def load_recipes():
+    """读取整套妆配方; 文件缺失/损坏时返回空 dict (fail-soft, 上层列空清单)."""
     if 'r' not in _cache:
-        with open(RECIPES_PATH, encoding='utf-8') as f:
-            _cache['r'] = json.load(f)
+        try:
+            with open(RECIPES_PATH, encoding='utf-8') as f:
+                _cache['r'] = json.load(f)
+        except (OSError, json.JSONDecodeError):
+            _cache['r'] = {}
     return _cache['r']
 
 

@@ -4,11 +4,15 @@ Input: 256x256 crop around face box; output 478 (x,y,z) normalized to canvas.
 Canonical indices: mesh 0-467, left iris 468-472, right iris 473-477.
 'left'/'right' below are IMAGE-side (image-left / image-right) for stability.
 Verified against SegFormer eye/lip mask bboxes on tests/test_face.jpg."""
+import os
+
+import cv2
+import numpy as np
+
 from ..gpu import make_session
-import numpy as np, cv2, os
+from .model_store import model_path as _model_path
 
 MODELS_DIR = os.path.join(os.path.dirname(__file__), 'models')
-from .model_store import model_path as _model_path
 LANDMARK_MODEL_NAME = 'face_landmarks.onnx'
 _sess_cache = None
 
@@ -16,7 +20,6 @@ _sess_cache = None
 def _sess():
     global _sess_cache
     if _sess_cache is None:
-        import onnxruntime as ort
         _sess_cache = make_session(_model_path(LANDMARK_MODEL_NAME))
     return _sess_cache
 
@@ -44,12 +47,12 @@ def get_landmarks(bgr, face_box):
     'iris_l','iris_r'} or None."""
     if face_box is None:
         return None
-    x, y, fw, fh = [float(v) for v in face_box[:4]]
+    x, y, fw, fh = (float(v) for v in face_box[:4])
     cx, cy = x + fw / 2, y + fh / 2
     side = max(fw, fh) * 1.4
     x0, y0 = cx - side / 2, cy - side / 2
     sc = 256.0 / side
-    M = np.float32([[sc, 0, -x0 * sc], [0, sc, -y0 * sc]])
+    M = np.array([[sc, 0, -x0 * sc], [0, sc, -y0 * sc]], dtype=np.float32)
     crop = cv2.warpAffine(bgr, M, (256, 256), borderMode=cv2.BORDER_REPLICATE)
     inp = (crop[..., ::-1].astype(np.float32) / 127.5 - 1.0)[None]   # NHWC
     s = _sess()
@@ -60,9 +63,9 @@ def get_landmarks(bgr, face_box):
     shp = meta.shape
     if len(shp) == 4 and shp[1] == 3:
         inp = np.ascontiguousarray(inp.transpose(0, 3, 1, 2))
-    out = s.run(None, {meta.name: inp})[0]
+    out = np.asarray(s.run(None, {meta.name: inp})[0])
     pts = out.reshape(478, 3)[:, :2]
-    p = pts / np.float32([sc, sc]) + np.float32([x0, y0])
+    p = pts / np.array([sc, sc], dtype=np.float32) + np.array([x0, y0], dtype=np.float32)
     # sanity: mesh must land near the face box
     if p[:, 0].min() < x - fw or p[:, 0].max() > x + fw * 2 or \
        p[:, 1].min() < y - fh or p[:, 1].max() > y + fh * 2:

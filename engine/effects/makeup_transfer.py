@@ -6,9 +6,14 @@ img_A=素颜脸, img_B=带妆参考脸 -> fake_A = A 的脸 + B 的妆.
 贴妆区域用 478 点 landmark 定位 (唇/眼睑环/眉) + 颧骨腮红.
 degree 0..1 控制妆感强度. 无 torch, 纯 onnxruntime CPU.
 """
+import glob
+import os
+
+import cv2
+import numpy as np
+
 from ..gpu import make_session
 from ..perception.model_store import model_path as _model_path
-import os, glob, cv2, numpy as np
 
 MODEL_NAME = 'beautygan.onnx'   # resolved via model_store (bundled dir or PIXLITE_MODELS_DIR)
 REF_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', 'assets', 'makeup_refs'))
@@ -36,7 +41,7 @@ def _align_crop(bgr, box, size=256, pad=1.35):
     cx, cy = x + fw / 2, y + fh / 2
     side = max(fw, fh) * pad
     sc = size / side
-    M = np.float32([[sc, 0, (size / 2 - cx * sc)], [0, sc, (size / 2 - cy * sc)]])
+    M = np.array([[sc, 0, (size / 2 - cx * sc)], [0, sc, (size / 2 - cy * sc)]], dtype=np.float32)
     crop = cv2.warpAffine(bgr, M, (size, size), borderMode=cv2.BORDER_REFLECT)
     rgb = crop[..., ::-1].astype(np.float32) / 127.5 - 1.0
     return rgb.transpose(2, 0, 1)[None], cv2.invertAffineTransform(M)
@@ -44,8 +49,8 @@ def _align_crop(bgr, box, size=256, pad=1.35):
 
 def _forward(a_rgb, b_rgb):
     s = get_session()
-    out = s.run(None, {s.get_inputs()[0].name: a_rgb,
-                       s.get_inputs()[1].name: b_rgb})[0]  # fake_A: A 的脸 + B 的妆
+    out = np.asarray(s.run(None, {s.get_inputs()[0].name: a_rgb,
+                                  s.get_inputs()[1].name: b_rgb})[0])
     return (np.clip(out[0].transpose(1, 2, 0), -1, 1) * 0.5 + 0.5)
 
 
@@ -112,9 +117,9 @@ def _apply_lab_shift(bgr, weight, shift):
 # 妆感三档 profile (像素蛋糕预设本身 fe 全 0 —— 妆在其独立妆造包中,
 # 无 pf 数据可分层; 故显式定义可复现档位, 数值按视觉评审标定 2026-11-03)
 INTENSITY_PROFILES = {
-    1: dict(ab_mul=2.0, l_gloss=0.15, blush=0.35, ring=11, lip_min=2.0),  # 淡妆·日常
-    2: dict(ab_mul=4.0, l_gloss=0.30, blush=0.60, ring=15, lip_min=3.0),  # 舞台·默认
-    3: dict(ab_mul=6.5, l_gloss=0.45, blush=0.85, ring=19, lip_min=5.0),  # 浓妆·婚拍
+    1: {'ab_mul': 2.0, 'l_gloss': 0.15, 'blush': 0.35, 'ring': 11, 'lip_min': 2.0},  # 淡妆·日常
+    2: {'ab_mul': 4.0, 'l_gloss': 0.30, 'blush': 0.60, 'ring': 15, 'lip_min': 3.0},  # 舞台·默认
+    3: {'ab_mul': 6.5, 'l_gloss': 0.45, 'blush': 0.85, 'ring': 19, 'lip_min': 5.0},  # 浓妆·婚拍
 }
 
 def transfer_makeup(bgr, faces=None, degree=0.7, style=None, level=2):
@@ -190,19 +195,19 @@ def transfer_makeup(bgr, faces=None, degree=0.7, style=None, level=2):
         sh_lid[2] = float(np.clip(sh_lid[2], -8, 8))
 
         # ---- 全分辨率 landmark 蒙版 (羽化) ----
-        def soft(m_crop, blur):
-            mf = cv2.warpAffine(m_crop, Minv, (W, H))
+        def soft(m_crop, blur, minv):
+            mf = cv2.warpAffine(m_crop, minv, (W, H))
             s = cv2.GaussianBlur((mf > 0).astype(np.float32), (0, 0), blur)
             return np.clip(s, 0, 1)
 
         # 唇妆
-        out = _apply_lab_shift(out, soft(m_lip, max(2, fh * 0.015)) * d, sh_lip)
+        out = _apply_lab_shift(out, soft(m_lip, max(2, fh * 0.015), Minv) * d, sh_lip)
         # 眼影: 眼睑环 (landmark 定位)
         m_lid = cv2.bitwise_or(m_lid_l, m_lid_r)
-        out = _apply_lab_shift(out, soft(m_lid, max(2, fh * 0.02)) * d, sh_lid)
+        out = _apply_lab_shift(out, soft(m_lid, max(2, fh * 0.02), Minv) * d, sh_lid)
         # 眉: 用眉色差加深
         m_brow = cv2.bitwise_or(m_brow_l, m_brow_r)
-        out = _apply_lab_shift(out, soft(m_brow, max(2, fh * 0.015)) * d * 0.8, sh_brow)
+        out = _apply_lab_shift(out, soft(m_brow, max(2, fh * 0.015), Minv) * d * 0.8, sh_brow)
 
         # ---- 腮红: 唇妆同系色调, 颧骨椭圆 (landmark 定位) ----
         sh_blush = sh_lip.copy()
