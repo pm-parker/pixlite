@@ -59,13 +59,13 @@ def _auth_decision(client, path, header_key, query_key, via_gateway=False):
 
 
 # ---- 飞牛统一网关 (免密钥访问) ----
-# 桌面图标 → https://<NAS>/app/fnnas.pixlite/ → fnOS 校验 NAS 登录态 → 转发到本服务的
+# 桌面图标 → https://<NAS>/app/fnnas-pixlite/ → fnOS 校验 NAS 登录态 → 转发到本服务的
 # Unix Socket (PIXLITE_GATEWAY_SOCKET, 由 server/run.py 监听), 并附带 X-Trim-Userid /
 # X-Trim-Username / X-Trim-Isadmin。经该 socket 进来的请求视为已认证, 用户无需任何密钥。
 # 判定依据是 ASGI scope['server'] (监听端点, 由内核 accept 决定, 客户端无法伪造),
 # 而不是客户端可写的请求头; TCP 端口上的 X-Trim-* 头一律剥离。
 GATEWAY_SOCKET = os.environ.get('PIXLITE_GATEWAY_SOCKET', '')
-GATEWAY_PREFIX = os.environ.get('PIXLITE_GATEWAY_PREFIX', '/app/fnnas.pixlite').rstrip('/')
+GATEWAY_PREFIX = os.environ.get('PIXLITE_GATEWAY_PREFIX', '/app/fnnas-pixlite').rstrip('/')
 _TRIM_HEADERS = (b'x-trim-userid', b'x-trim-username', b'x-trim-isadmin')
 
 

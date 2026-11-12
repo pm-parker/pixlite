@@ -98,11 +98,15 @@ def write_ui(app_dir, mf):
     except OSError as e:
         die(f'复制图标失败: {e}')
     entry = mf.get('desktop_applaunchname', mf['appname'] + '.Application')
-    prefix = '/app/' + mf['appname']
+    # 前缀不带点: 应用中心只给 type=iframe 的条目落库网关字段, 且带点包名的前缀
+    # (如 /app/fnnas.pixlite) 解析异常; 统一转连字符, 对齐系统应用惯例 (/app/trim-preview)
+    prefix = '/app/' + mf['appname'].replace('.', '-')
     cfg = {'.url': {entry: {
         'title': mf.get('display_name', mf['appname']),
         'icon': 'images/icon_{0}.png',
-        'type': 'url',               # 新标签页打开 (修图工作台需要完整窗口)
+        # type 必须是 iframe: 实测 fnOS 1.2.1010 应用中心只给 iframe 条目注册统一网关
+        # (type=url 时 gatewayPrefix/gatewaySocket 不落库, 路由永不注册 → 点图标 Not Found)
+        'type': 'iframe',
         'protocol': '',              # 网关入口忽略 protocol/port, 沿用当前访问域名
         'gatewayPrefix': prefix,
         'gatewaySocket': 'app.sock',
@@ -214,6 +218,8 @@ def main():
             ent = next(iter(json.load(fh)['.url'].values()))
         if ent.get('gatewaySocket') != 'app.sock' or not ent.get('gatewayPrefix', '').startswith('/app/'):
             problems.append('app/ui/config 未配置统一网关入口')
+        elif '.' in ent.get('gatewayPrefix', '') or ent.get('type') != 'iframe':
+            problems.append('gatewayPrefix 含点或 type!=iframe (应用中心不解析, 路由不会注册)')
     except Exception as e:
         problems.append(f'app/ui/config 解析失败: {e}')
     n_lut = len(glob.glob(os.path.join(app, 'lut', 'Filters', '*', 'filter.png')))

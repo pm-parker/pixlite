@@ -27,7 +27,8 @@ export PIXLITE_GATEWAY_SOCKET="${TRIM_APPDEST}/app.sock"
 # AI 模型: full 包内置的直接使用; 精简包缺失的由服务启动后在后台自动下载到 var/models
 # (升级保留, 断点续传, 国内系统优先 hf-mirror, sha256 校验), 用户无需任何操作
 export PIXLITE_MODELS_DIR="${TRIM_PKGVAR}/models"
-export PIXLITE_GATEWAY_PREFIX="/app/${TRIM_APPNAME:-fnnas.pixlite}"
+# 前缀转连字符: 应用中心不解析带点前缀 (详见 fnpack/build_pkg.py write_ui 注释)
+export PIXLITE_GATEWAY_PREFIX="/app/$(echo "${TRIM_APPNAME:-fnnas.pixlite}" | tr '.' '-')"
 export PIXLITE_ALLOWED_ROOTS="${PIXLITE_ALLOWED_ROOTS:-$(ls -d /vol[0-9]* 2>/dev/null | tr '\n' ':')/var/apps/fnnas.pixlite/share:${TRIM_PKGVAR}/work}"
 if [ -f "${TRIM_PKGVAR}/gpu_ep.conf" ]; then
     export PIXLITE_EP="$(tr -d '\n' < "${TRIM_PKGVAR}/gpu_ep.conf")"
