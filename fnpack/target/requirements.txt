@@ -1,9 +1,0 @@
-# Pinned (Issue #10); keep in sync with ../requirements.txt
-fastapi==0.162.5
-uvicorn==0.54.0
-python-multipart==0.0.33
-opencv-python-headless==5.0.0.93
-numpy==2.5.4
-onnxruntime==1.31.1  # CPU 版; AMD GPU 加速换装 onnxruntime-rocm (fnOS 装 ROCm 7.2 后)
-pillow==13.0.0
-rawpy==0.28.0

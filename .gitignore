@@ -17,3 +17,4 @@ engine/perception/models/*.onnx
 fnpack/build/
 dist/
 *.part
+fnpack/target/
