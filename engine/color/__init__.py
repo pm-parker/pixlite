@@ -162,6 +162,38 @@ def white_balance(bgr, temperature=0, tint=0):
     return np.clip(f + 0.5, 0, 255).astype(np.uint8)
 
 
+# 调色 → 配置文件 (对标 Lightroom/像素蛋糕 "Profile"): 作用在其它调色之前的基础色彩渲染。
+# standard 为恒等 (不改图); strength 0..1 与原图线性混合。
+PROFILES = ("standard", "texture", "bw", "basic")
+
+
+def apply_profile(bgr, name="standard", strength=1.0):
+    """texture: 中频局部对比 + 轻微提饱和 (质感); bw: 亮度加权黑白 (保留肤色层次);
+    basic: 低对比、低饱和的平淡起点 (便于后续自行调色)。"""
+    s = float(np.clip(strength, 0, 1))
+    if name not in PROFILES or name == "standard" or s <= 0:
+        return bgr
+    f = bgr.astype(np.float32) / 255.0
+    if name == "texture":
+        blur = cv2.GaussianBlur(f, (0, 0), 6.0)
+        out = np.clip(f + (f - blur) * 0.6, 0, 1)
+        hsv = cv2.cvtColor((out * 255).astype(np.uint8), cv2.COLOR_BGR2HSV).astype(np.float32)
+        hsv[..., 1] = np.clip(hsv[..., 1] * 1.08, 0, 255)
+        out = cv2.cvtColor(hsv.astype(np.uint8), cv2.COLOR_HSV2BGR).astype(np.float32) / 255.0
+    elif name == "bw":
+        # 通道混合: 红通道权重偏高, 人像肤色更亮更干净 (类似胶片红滤镜)
+        gray = f[..., 2] * 0.40 + f[..., 1] * 0.45 + f[..., 0] * 0.15
+        gray = np.clip((gray - 0.5) * 1.08 + 0.5, 0, 1)
+        out = np.repeat(gray[..., None], 3, axis=2)
+    else:  # basic
+        mean = f.mean(axis=2, keepdims=True)
+        out = (f - 0.5) * 0.85 + 0.5
+        out = mean + (out - mean) * 0.85
+        out = np.clip(out, 0, 1)
+    res = f * (1 - s) + out * s
+    return np.clip(res * 255 + 0.5, 0, 255).astype(np.uint8)
+
+
 # HSL 8 色相带中心 (度, 0..360): 红/橙/黄/绿/浅绿/蓝/紫/洋红 (与前端 HSL_BANDS 顺序一致)
 HSL_CENTERS = (0.0, 30.0, 60.0, 120.0, 180.0, 240.0, 270.0, 300.0)
 

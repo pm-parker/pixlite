@@ -401,7 +401,7 @@ def build_preset(base_name, overrides, routing=None, person=None):
             preset.setdefault("nodes", []).append(node)
     # curves control points: convert flat dict {rgb:[..]} untouched; selective_color
     # flat keys sc.<color>.<comp> handled above via op prefix 'selective_color'
-    ORDER = ["ai_calibrate", "white_balance", "tone", "hsl", "lut"]
+    ORDER = ["ai_calibrate", "profile", "white_balance", "tone", "hsl", "lut"]
     for op in ORDER:
         if op in by_op:
             preset.setdefault("nodes", []).append({"op": op, "params": by_op.pop(op)})
@@ -622,10 +622,20 @@ def makeup_suits():
 
 @app.get("/api/presets")
 def presets():
+    """只列出可执行预设 (含 nodes 的流水线)。presets/ 下还有 lut_names / suit_recipes 等
+    数据表, 旧实现一并返回, 用户在批量或新建向导里选中后会直接 400。"""
     try:
-        return [f[:-5] for f in os.listdir(PRESETS) if f.endswith(".json")]
+        names = sorted(f[:-5] for f in os.listdir(PRESETS) if f.endswith(".json"))
     except OSError:
         return []  # presets 目录缺失 (异常部署): 空列表而不是 500
+    out = []
+    for n in names:
+        try:
+            _load_preset(n)
+        except (ValueError, OSError):
+            continue
+        out.append(n)
+    return out
 
 
 # ---- batch directory mode ----
@@ -653,10 +663,22 @@ def batch(
     preset: str = Form("wedding_basic"),
     recursive: bool = Form(True),
     workers: int = Form(2),
+    overrides: str = Form(""),
+    routing: str = Form(""),
+    person: str = Form(""),
 ):
     # 同步 def: 内部全是阻塞 FS 调用 (realpath/listdir/collect_images), 交给 FastAPI
     # 线程池执行, 不占事件循环 (NAS 机械盘上的目录扫描可达秒级)
+    # overrides/routing/person 与 /api/retouch 同语义: 前端传入工作台当前滑杆参数时,
+    # 批量按"预设 + 当前参数"处理 (beta.4 之前只能套预设, 调好的参数无法批量应用)
     workers = max(1, min(workers, MAX_BATCH_WORKERS))  # 上限防资源耗尽
+    try:
+        ov = json.loads(overrides) if overrides else None
+        rt = json.loads(routing) if routing else None
+    except ValueError as e:
+        return JSONResponse({"error": f"overrides/routing JSON 无效: {e}"}, 400)
+    if ov is not None and not isinstance(ov, dict):
+        return JSONResponse({"error": "overrides 必须是对象"}, 400)
     if not _path_ok(src_dir):
         return JSONResponse({"error": "forbidden"}, 403)
     if not os.path.isdir(src_dir):
@@ -668,7 +690,7 @@ def batch(
         if sum(1 for j in batch_jobs.values() if j.get("status") == "running") >= MAX_ACTIVE_BATCHES:
             return JSONResponse({"error": f"已有 {MAX_ACTIVE_BATCHES} 个批量任务在运行, 请稍后再试"}, 429)
     try:
-        pipe_holder = DictPipeline(_load_preset(preset))
+        pipe_holder = DictPipeline(build_preset(preset, ov, rt, person or None))
     except ValueError as e:
         return JSONResponse({"error": str(e)}, 400)
     # 输出目录不能在源目录内: 递归模式下第二次运行会把上次输出当输入再精修一遍
@@ -692,6 +714,8 @@ def batch(
         "dst": dst,
         "job": bj,
         "ts": time.time(),
+        "preset": preset,
+        "with_overrides": bool(ov),
     }
     threading.Thread(target=_run_batch, args=(job_id, src_dir, dst, preset, recursive, workers), daemon=True).start()
     return {"job": job_id, "total": len(files), "dst": dst}

@@ -115,7 +115,9 @@ function saveSettings(jobId) {
   project.value.settings[imgName.value] = {
     preset: preset.value,
     overrides: { ...overrides.value },
+    routing: curRouting.value || null,
     jobId: jobId ?? resultJob.value,
+    ts: Date.now(),   // 批量「套用工作台当前参数」取最近一次的设置
   }
   store.save()
 }
@@ -281,8 +283,9 @@ const presetTreeList = computed(() => {
   const others = lib.filter(e => !known.has(e.category)).map(e => ({ id: e.name, name: e.name, ov: e.overrides, routing: e.routing }))
   if (others.length) cats.push({ id: 'other', name: '其他', items: others })
   cats.push({ id: 'base', name: '基础', items: [
+    // BUGFIX: facesurgery_headnarrow 是瘦脸系数表而不是可执行预设, 点击后精修直接 400
     { id: 'wedding_basic', name: '婚纱一键' },
-    { id: 'facesurgery_headnarrow', name: '小头调整' },
+    { id: 'gfp_deep_test', name: '深度修复' },
   ] })
   return cats
 })

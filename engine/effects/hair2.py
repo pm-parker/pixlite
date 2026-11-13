@@ -18,7 +18,10 @@ def hair_smooth(bgr, parsing, degree=0.5):
     smooth = cv2.bilateralFilter(smooth, 9, 60, 60)
     low = cv2.GaussianBlur(bgr, (0, 0), 2.5)
     tex = cv2.subtract(bgr, low)
-    smooth = cv2.add(smooth, tex * 0.45)
+    # 提交 ef23d64 把 cv2.multiply(tex, 0.45) 改成 tex * 0.45 (float64), 与 uint8 的 smooth
+    # 做 cv2.add 时类型不一致 → OpenCV arithm_op 报错, 头发柔顺整单失败。统一用 float32 计算,
+    # 与旧版 cv2.add/cv2.multiply 一样在 0..255 截断。
+    smooth = np.clip(smooth.astype(np.float32) + tex.astype(np.float32) * 0.45, 0, 255)
     w = (cv2.GaussianBlur((m > 128).astype(np.float32), (0, 0), 3) * d)[..., None]
     return np.clip(bgr * (1 - w) + smooth * w, 0, 255).astype(np.uint8)
 

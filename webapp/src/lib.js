@@ -41,10 +41,13 @@ export const API = {
       } catch (e) { bail(reject, e) }
     }, interval)
   }),
-  async batch(srcDir, dstDir, preset, recursive = true, workers = 2) {
+  async batch(srcDir, dstDir, preset, recursive = true, workers = 2, overrides = null, routing = null, person = '') {
     const fd = new FormData()
     fd.append('src_dir', srcDir); fd.append('preset', preset)
     if (dstDir) fd.append('dst_dir', dstDir)
+    if (overrides && Object.keys(overrides).length) fd.append('overrides', JSON.stringify(overrides))
+    if (routing && Object.keys(routing).length) fd.append('routing', JSON.stringify(routing))
+    if (person) fd.append('person', person)
     fd.append('recursive', recursive); fd.append('workers', workers)
     const resp = await fetch('api/batch', { method: 'POST', body: fd, headers: _h() })
     const data = await resp.json().catch(() => ({}))
@@ -414,6 +417,18 @@ export const PRESET_TREE = [
   { id: 'family', name: '全家福', match: p => /family/.test(p) },
 ]
 export const HSL_BANDS = ['红色', '橙色', '黄色', '绿色', '浅绿', '蓝色', '紫色', '洋红']
+
+/* 右侧「图像」板块 (UI 0..100 → 引擎 degree 0..1) */
+export const IMAGE_PARAMS = [
+  { key: 'img.quality_enhance', engine: 'quality_enhance.degree', label: '画质修复(超清)', min: 0, max: 100, group: 'quality' },
+  { key: 'img.blur_background', engine: 'blur_background.degree', label: '背景虚化', min: 0, max: 100, group: 'background' },
+  { key: 'img.sky_enhance', engine: 'sky_enhance.degree', label: '天空增强', min: 0, max: 100, group: 'background' },
+  { key: 'img.sky_replace', engine: 'sky_replace.degree', label: '天空替换', min: 0, max: 100, group: 'background' },
+]
+export const SKY_MODES = [
+  { id: 'sunset', label: '日落' }, { id: 'azure', label: '晴空' },
+  { id: 'dusk', label: '黄昏' }, { id: 'storm', label: '阴天' },
+]
 export const WB_PRESETS = [
   { label: 'AI校准', t: 0, g: 0, ai: 'white_balance' }, { label: '原照设置', t: 0, g: 0 },
   { label: '自动', t: 4, g: -2 }, { label: '阴天', t: 15, g: 5 }, { label: '日光', t: 8, g: 0 },
@@ -422,8 +437,9 @@ export const WB_PRESETS = [
 
 export const PRESET_LABELS = {
   wedding_basic: '婚纱一键',
-  facesurgery_headnarrow: '小头调整',
-  lut_names: '滤镜彩蛋',
+  gfp_deep_test: '深度修复',
+  makeup_only: '妆容迁移',
+  makeup_suit_test: '整套妆容',
 }
 
 export function defaultOverrides() {
@@ -441,6 +457,10 @@ export function defaultOverrides() {
   o['color_match.color'] = 0
   o['lut.filter'] = ''
   o['lut.degree'] = 70
+  for (const p of IMAGE_PARAMS) o[p.key] = 0
+  o['sky_replace.mode'] = 'sunset'
+  o['color.profile'] = 'standard'
+  o['color.profile_strength'] = 100
   o['white_balance.temperature'] = 0
   o['white_balance.tint'] = 0
   for (const k of ['exposure', 'contrast', 'brightness', 'highlight', 'shadow', 'whites', 'blacks',
@@ -465,7 +485,7 @@ export function defaultOverrides() {
     for (const f of ['c', 'm', 'y', 'k', 'absolute']) o[`selective_color.${c}.${f}`] = f === 'absolute' ? false : 0
   // 人物属性
   o.__person = 'female'
-  o.__scope = 'single'
+  o.__scope = 'single'   // 仅前端保留; 作用范围尚未实现 (界面置灰)
   return o
 }
 
@@ -487,6 +507,8 @@ export function toEngineOverrides(values) {
   const vals = { ...values }
   for (const [k, v] of Object.entries(vals)) {
     if (k.startsWith('__')) continue
+    if (IMAGE_PARAMS.some(p => p.key === k)) continue   // 循环结束后统一合并 (见下)
+    if (k === 'sky_replace.mode') continue   // 随 sky_replace.degree 一起下发 (见下)
     if (k === 'grain.density') {
       // UI 0..100 → 引擎密度 0..0.3 (0=引擎默认0.04); 高于100透传引擎原始值
       if (v) out[k] = v <= 100 ? Math.round((v / 100 * 0.3) * 1000) / 1000 : v
@@ -548,6 +570,18 @@ export function toEngineOverrides(values) {
   if (refPath) {
     out['color_match.ref_image'] = refPath
     out['color_match.strength'] = st > 0 ? st / 100 : 0.8
+  }
+  // 图像板块: 与人像 Tab 中同名引擎参数 (如「祛除瑕疵」里的画质修复) 取较大值, 与遍历顺序无关
+  for (const p of IMAGE_PARAMS) {
+    const v = values[p.key]
+    if (v) out[p.engine] = Math.max(out[p.engine] || 0, Math.round(v * 10) / 1000)
+  }
+  if (out['sky_replace.degree']) out['sky_replace.mode'] = values['sky_replace.mode'] || 'sunset'
+  // 调色 → 配置文件 (标准 = 不改图)
+  const prof = values['color.profile']
+  if (prof && prof !== 'standard') {
+    out['profile.name'] = prof
+    out['profile.strength'] = Math.round((values['color.profile_strength'] ?? 100) * 10) / 1000
   }
   if (values['ai_calibrate.white_balance']) out['ai_calibrate.white_balance'] = true
   if (values['ai_calibrate.exposure']) out['ai_calibrate.exposure'] = true

@@ -69,7 +69,7 @@ def _make_masked_runner(op, pr):
 
 # 不依赖人脸的全局节点: 无人脸时仍执行 (原列表漏了天空/画质类, 纯风景照
 # 上天空替换/增强、画质修复全部被静默跳过)
-GLOBAL_OPS = {'tone', 'hsl', 'lut', 'white_balance', 'grain', 'curves',
+GLOBAL_OPS = {'profile', 'tone', 'hsl', 'lut', 'white_balance', 'grain', 'curves',
               'levels', 'color_grading', 'selective_color', 'color_editor',
               'ai_calibrate', 'color_match', 'raw_develop', 'face_detect',
               'face_parsing', 'sky_replace', 'sky_enhance', 'quality_enhance'}
@@ -363,6 +363,8 @@ class Pipeline:
                     bgr = C.apply_lut(bgr, lut, degree=pr.get('degree', 70))
             if op == 'raw_develop':
                 pass  # raw handled at ingest
+            elif op == 'profile':
+                bgr = C.apply_profile(bgr, pr.get('name', 'standard'), float(pr.get('strength', 1.0)))
             elif op == 'tone':
                 bgr = C.tone_adjust(bgr, pr)
             elif op == 'white_balance':

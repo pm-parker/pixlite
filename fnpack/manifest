@@ -1,5 +1,5 @@
 appname               = fnnas.pixlite
-version               = 0.1.12-beta.3
+version               = 0.1.12-beta.4
 display_name          = PixLite 修图
 desc                  = 本地 AI 修图工作台 (像素蛋糕 PixCake 开源复刻), 浏览器访问
 platform              = x86
@@ -12,4 +12,4 @@ service_port          = 8300
 checkport             = false
 ctl_stop              = true
 install_dep_apps      = python312
-changelog             = 0.1.12-beta.1：从飞牛桌面图标打开即用（登录飞牛自动认证，无需连接密钥），AI 模型首次启动后台自动下载并显示进度，修复 38 项问题
+changelog             = 0.1.12-beta.4：图像板块（画质修复、背景虚化、天空）可用，配置文件生效，批量可套用工作台参数，修复头发柔顺报错和预设下拉为空

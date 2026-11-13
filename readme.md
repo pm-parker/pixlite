@@ -2,7 +2,7 @@
 
 **本地运行的 AI 人像精修工作台，面向飞牛 fnOS NAS。** 浏览器打开即用，照片和模型都不出 NAS。
 
-> 当前为 **Beta** 版（`v0.1.12-beta.1`）。功能和界面对标像素蛋糕 10.0.5 的人像精修流程，仍有部分功能未实现（见[已知限制](#已知限制)）。欢迎在 [Issues](https://github.com/pm-parker/pixlite/issues) 反馈问题。
+> 当前为 **Beta** 版（`v0.1.12-beta.4`）。功能和界面对标像素蛋糕 10.0.5 的人像精修流程，仍有部分功能未实现（见[已知限制](#已知限制)）。欢迎在 [Issues](https://github.com/pm-parker/pixlite/issues) 反馈问题。
 
 ![工作台](docs/final_screens/workspace.png)
 
@@ -14,9 +14,9 @@
 | 五官与形体 | 瘦脸 / 小头等面部重塑、自动液化、亮眼、眼神光、祛双眼皮贴、眼镜祛反光、微笑嘴角、笑容管理、露龈调整、牙齿美白 / 排齐 / 祛瑕疵、瘦腰、瘦腿、长腿、祛副乳、祛妊娠纹 |
 | 头发与妆容 | 祛碎发、头发柔顺、发缝填充、颅顶调整、发量、发色调整 / 统一、祛白发；高光 / 阴影立体、眉毛 / 眼妆 / 唇妆增强；24 套整套妆容；AI 妆容迁移（BeautyGAN） |
 | 调色 | 白平衡、影调（曝光、对比、亮度、高光、阴影、白色、黑色、纹理、清晰度、祛雾、鲜艳度、饱和度）、HSL 8 色、色彩编辑器、曲线、色阶、颜色分级、可选颜色、颗粒、AI 追色 |
-| 滤镜与背景 | 92 个 LUT 滤镜（三线性插值）、背景虚化 / 换纯色（MODNet 抠像）、天空替换 / 增强、Real-ESRGAN 画质修复 |
+| 滤镜与背景 | 92 个 LUT 滤镜（三线性插值）、配置文件（标准 / 质感 / 黑白 / 基础）、背景虚化 / 换纯色（MODNet 抠像）、天空替换（日落 / 晴空 / 黄昏 / 阴天）/ 增强、Real-ESRGAN 画质修复 |
 | 工作流 | 项目管理、星级 / 留用 / 色标筛选、按住对比、撤销重做（Ctrl+Z）、52 个场景预设（婚纱、儿童、孕妇、新生儿、全家福、胶片等 9 类）、人物属性（女 / 男 / 儿童 / 长辈，多人照片逐脸识别）、EXIF 读取、单张 / 全部导出 |
-| 批量 | 整个目录递归批量精修，保留目录结构，支持断点续跑和取消；支持 JPG / PNG / WebP / BMP / TIFF 和 DNG / CR2 / CR3 / ARW / NEF / RAF / ORF / RW2 等 RAW 格式 |
+| 批量 | 整个目录递归批量精修，可选套用预设或工作台里调好的参数，保留目录结构，支持断点续跑和取消；支持 JPG / PNG / WebP / BMP / TIFF 和 DNG / CR2 / CR3 / ARW / NEF / RAF / ORF / RW2 等 RAW 格式 |
 | 加速 | CPU 默认可用；自动探测 NVIDIA CUDA、AMD MIGraphX / ROCm、Intel OpenVINO（Windows 上为 DirectML），失败时回退 CPU |
 
 所有效果都在本地运行（OpenCV + onnxruntime），不调用任何云端服务。滑杆与引擎算法的对应关系见 [CAPABILITY_MAP.md](CAPABILITY_MAP.md)。
@@ -36,7 +36,7 @@
 
 安装后不需要任何手动配置：
 
-- **不需要密钥**：桌面图标走飞牛的[统一网关](https://developer.fnnas.com/docs/core-concepts/gateway-registration/)（`/app/fnnas.pixlite/`），飞牛先校验 NAS 登录，已登录的用户直接可用。
+- **不需要密钥**：桌面图标走飞牛的[统一网关](https://developer.fnnas.com/docs/core-concepts/gateway-registration/)（`/app/fnnas-pixlite/`，以飞牛窗口内嵌方式打开），飞牛先校验 NAS 登录，已登录的用户直接可用。
 - **模型自动下载**：精简包首次启动后在后台下载模型，页面底部显示进度和剩余时间。下载期间可以先浏览和整理照片，下载完成后精修自动可用。中文系统优先使用 hf-mirror.com，支持断点续传和多源切换，每个文件都做 sha256 校验；失败时每 5 分钟自动重试，也可以点「立即重试」。
 - **升级保留数据**：模型保存在应用数据目录 `var/models`，项目数据在浏览器本地，升级应用不需要重新下载。
 
@@ -174,7 +174,7 @@ python tests/run_out_c.py       # 单效果验证（需要模型）
 本地打包：
 
 ```bash
-python fnpack/build_pkg.py --fnpack /path/to/fnpack [--with-models] [--version 0.1.12-beta.1]
+python fnpack/build_pkg.py --fnpack /path/to/fnpack [--with-models] [--version 0.1.12-beta.4]
 ```
 
 产物输出在 `dist/`。脚本会先构建前端，再组装飞牛要求的目录结构（`app/` 和 `app/ui/config`），并校验入口配置、前端文件和 LUT 是否齐全。
@@ -184,7 +184,8 @@ python fnpack/build_pkg.py --fnpack /path/to/fnpack [--with-models] [--version 0
 - **尚未在飞牛真机上完整验证**：统一网关入口按[官方文档](https://developer.fnnas.com/docs/core-concepts/gateway-registration/)实现，生命周期脚本在本地模拟环境下测试通过。较老的 fnOS 版本如果不支持统一网关，桌面图标可能打不开，这时可以用直连端口访问。
 - **仅支持 x86**：`manifest` 中 `platform = x86`。
 - **部分功能未实现**：界面中标「开发中」的项目需要云端大模型或额外的分割模型，目前置灰，包括 AI 祛纹身、AI 祛体毛、手部 / 脚部美型、AI 塑形、瘦手臂、直角肩等，详见 [CAPABILITY_MAP.md](CAPABILITY_MAP.md)。
-- **多人照片**：每张脸都会单独识别人群，但效果参数按整张图统一应用。混合人群（例如新人和长辈的合影）时会回退为默认参数，不会按每个人分别调整。
+- **多人照片**：每张脸都会单独识别人群，但效果参数按整张图统一应用。混合人群（例如新人和长辈的合影）时会回退为默认参数，不会按每个人分别调整；人物属性里的「单人 / 所有人」作用范围也尚未实现（界面置灰）。
+- **多图色彩统一**：尚未实现（界面置灰），可先用 AI 色彩的参考图追色逐张统一。
 - **身体类效果**：用衣物 / 颈部分割区域近似身体轮廓，在头像特写上效果有限。
 - **CPU 性能**：在没有 GPU 的 NAS 上，含 GFPGAN 的预设单张需要数秒到数十秒。
 
@@ -192,6 +193,8 @@ python fnpack/build_pkg.py --fnpack /path/to/fnpack [--with-models] [--version 0
 
 修复和改进的明细见 [BUGFIX_REPORT.md](BUGFIX_REPORT.md)。
 
+- **0.1.12-beta.4**：右侧「图像」板块（画质修复、背景虚化、天空增强 / 替换）可用；配置文件接入引擎；批量精修可套用工作台参数；批量和新建项目的预设下拉不再为空；修复头发柔顺报错；作用范围、多图色彩统一改标「开发中」。
+- **0.1.12-beta.3**：飞牛桌面入口改为 iframe、网关前缀改为 `/app/fnnas-pixlite`（beta.1 / beta.2 点击桌面图标会 404）。
 - **0.1.12**：从飞牛桌面图标打开即用（飞牛登录自动认证，不需要连接密钥）；精简包首次启动后台自动下载模型并显示进度；GitHub Actions 自动构建 `.fpk`。
 - **0.1.11**：修复 Issue #1–#12：鉴权改为默认拒绝、文件访问白名单、资源上限、模型版本固定和 sha256 校验、多人逐脸识别、可复现的 Docker 和打包构建等。
 - **0.1.10**：修复 26 个缺陷：478 点关键点失效、LUT 按坐标查表、肤色被抹成灰、白平衡方向错误、HSL 只覆盖半个色环等。

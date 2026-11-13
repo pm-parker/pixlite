@@ -2,13 +2,16 @@
 /* 项目主页：左侧导航 + 项目卡片网格 + 新建向导 + 推荐预设 + 批量任务 */
 import { ref, computed, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { API, store, PRESET_LABELS, authState, refreshAuth, needsKey, modelState } from '../lib.js'
+import { API, store, PRESET_LABELS, authState, refreshAuth, needsKey, modelState, toEngineOverrides } from '../lib.js'
 import PathPicker from '../components/PathPicker.vue'
 import PxIcon from '../components/PxIcon.vue'
 
 const emit = defineEmits(['open'])
 
 const presets = ref([])
+/* 批量 / 新建向导的预设下拉。BUGFIX: 模板引用的 presetList 从未定义, 两个下拉始终为空 */
+const presetList = computed(() => (presets.value.length ? presets.value : ['wedding_basic'])
+  .map(id => ({ id, label: PRESET_LABELS[id] || id })))
 onMounted(async () => {
   await refreshAuth()
   // 直连端口且未配置密钥: 提示改用飞牛桌面图标 (免密钥), 仍可手动填写
@@ -191,6 +194,18 @@ const batchPreset = ref('wedding_basic')
 const batchRecursive = ref(true)
 const batchWorkers = ref(2)
 const batchRunning = ref(false)
+/* 套用工作台参数: 取最近一次在工作台精修过的照片的滑杆设置 (项目里按图保存的 overrides) */
+const lastWorkbench = computed(() => {
+  let best = null
+  for (const p of store.projects) {
+    for (const [name, st] of Object.entries(p.settings || {})) {
+      if (st && st.overrides && (!best || (st.ts || 0) > (best.ts || 0)))
+        best = { project: p.name, image: name, preset: st.preset, overrides: st.overrides, routing: st.routing, ts: st.ts || 0 }
+    }
+  }
+  return best
+})
+const batchUseWorkbench = ref(false)
 const batchStat = ref(null)
 const batchPickerShow = ref(false)
 
@@ -202,7 +217,10 @@ async function runBatch() {
   batchRunning.value = true
   batchStat.value = { done: 0, total: 0 }
   try {
-    const r = await API.batch(batchDir.value, '', batchPreset.value, batchRecursive.value, batchWorkers.value)
+    const wb = batchUseWorkbench.value ? lastWorkbench.value : null
+    const r = await API.batch(batchDir.value, '', wb?.preset || batchPreset.value, batchRecursive.value,
+                              batchWorkers.value, wb ? toEngineOverrides(wb.overrides) : null, wb?.routing,
+                              wb?.overrides?.__person || '')
     if (r.error) throw new Error(r.error)
     batchStat.value = { done: 0, total: r.total }
     let fails = 0
@@ -320,6 +338,17 @@ const libCats = [
               <el-select v-model="batchPreset" style="width: 100%">
                 <el-option v-for="p in presetList" :key="p.id" :value="p.id" :label="p.label" />
               </el-select>
+            </div>
+            <div class="batch-row">
+              <div class="pm-label2">参数</div>
+              <div style="display:flex; flex-direction:column; gap:4px">
+                <el-checkbox v-model="batchUseWorkbench" :disabled="!lastWorkbench">
+                  套用工作台当前参数
+                </el-checkbox>
+                <span class="batch-hint">{{ lastWorkbench
+                  ? `来自「${lastWorkbench.project}」的 ${lastWorkbench.image}（预设 ${PRESET_LABELS[lastWorkbench.preset] || lastWorkbench.preset}${batchUseWorkbench ? '，将覆盖上方预设' : ''}）`
+                  : '先在工作台调整并精修一张照片后可用；否则只套用所选预设' }}</span>
+              </div>
             </div>
             <div class="batch-row">
               <div class="pm-label2">选项</div>
@@ -555,6 +584,7 @@ export default { name: 'HomePage' }
 .batch-desc { font-size: 12px; color: var(--px-text-3); margin: 0 0 18px; }
 .batch-desc code { color: var(--px-accent-2); background: var(--px-accent-weak); padding: 1px 5px; border-radius: 4px; }
 .batch-row { margin-bottom: 16px; }
+.batch-hint { font-size: 12px; color: var(--px-text-3); }
 .pm-label2 { font-size: 12px; color: var(--px-text-2); margin-bottom: 6px; }
 .batch-actions { margin-top: 6px; }
 .batch-stat { margin-top: 18px; }

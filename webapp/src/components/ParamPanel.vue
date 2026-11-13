@@ -5,7 +5,7 @@
    调色 = 17 纵向子 tab + EXIF 条 + 多图色彩统一 */
 import { ref, reactive, watch, onMounted, computed } from 'vue'
 import { BEAUTY_TABS, RIGHT_PANEL_SECTIONS, COLOR_SUBTABS,
-         HSL_BANDS, WB_PRESETS, defaultOverrides, API, _h } from '../lib.js'
+         HSL_BANDS, WB_PRESETS, defaultOverrides, API, _h, IMAGE_PARAMS, SKY_MODES } from '../lib.js'
 import PxIcon from './PxIcon.vue'
 
 const props = defineProps({
@@ -50,15 +50,12 @@ function setVal(k, v) {
 function isWip(p) { return !p || p.key.startsWith('__wip') }
 const curSmooth = computed(() => curTab.value.sections.flatMap(s => s.method || []).find(m => m.id === smoothMethod.value))
 
-/* 图像板块: 画质修复 + 背景（engine 已实装） */
-const imageParams = [
-  { key: 'quality_enhance.degree', label: '画质修复(超清)', min: 0, max: 100 },
-]
-const bgParams = [
-  { key: 'blur_background.degree', label: '背景虚化', min: 0, max: 100 },
-  { key: 'sky_enhance.degree', label: '天空增强', min: 0, max: 100 },
-  { key: 'sky_replace.degree', label: '天空替换(日落)', min: 0, max: 100 },
-]
+/* 图像板块: 画质修复 + 背景 + 天空（engine 已实装）。
+   BUGFIX(beta.2): 模板绑定的 params/onParam 从未定义, 板块打开即渲染报错、滑杆无效。
+   现与其它面板共用 modelValue (val/setVal), 由 toEngineOverrides 的 IMAGE_PARAMS 映射到引擎。 */
+const imageParams = IMAGE_PARAMS.filter(p => p.group === 'quality')
+const bgParams = IMAGE_PARAMS.filter(p => p.group === 'background')
+const skyModes = SKY_MODES
 
 /* 色彩子 tab */
 const colorTab = ref('tone')
@@ -288,12 +285,8 @@ async function onRefFile(ev) {
   ev.target.value = ''
 }
 
-/* 多图色彩统一 */
-const unifyBusy = ref(false)
-async function unifyMulti() {
-  unifyBusy.value = true
-  try { await new Promise(r => setTimeout(r, 900)); emit('change', 'unify_multi') } finally { unifyBusy.value = false }
-}
+/* 多图色彩统一: 尚未实现 (旧代码只是延时 0.9 秒后触发一次重新精修, 没有任何统一处理),
+   入口已置灰标「开发中」 */
 
 function resetAll() {
   emit('update:modelValue', defaultOverrides())
@@ -321,9 +314,11 @@ function resetAll() {
                     :class="{ on: val('__person','female') === p.id }"
                     @click="setVal('__person', p.id)">{{ p.label }}</span>
               <span class="pm-scope-sep"></span>
-              <span v-for="s in scopes" :key="s.id" class="px-chip sm"
-                    :class="{ on: val('__scope','single') === s.id }"
-                    @click="setVal('__scope', s.id)">{{ s.label }}</span>
+              <!-- 作用范围: 引擎没有"选中某个人"的能力 (皮肤类效果作用于全部人脸, 部分五官/妆容只处理
+                   检测到的第一张脸), 两个选项都无法如实兑现, 置灰避免误导 -->
+              <span v-for="s in scopes" :key="s.id" class="px-chip sm wip"
+                    title="开发中：暂不能指定只修某一个人">{{ s.label }}</span>
+              <span class="pm-wip-tag" title="开发中：暂不能指定只修某一个人">开发中</span>
             </div>
           </div>
 
@@ -427,7 +422,8 @@ function resetAll() {
             </span>
             <span v-else-if="exif" class="pm-exif-none">{{ exif.width }}×{{ exif.height }} · 无EXIF信息</span>
             <span v-else class="pm-exif-none">EXIF 未读取</span>
-            <el-button size="small" text type="primary" :loading="unifyBusy" @click="unifyMulti">多图色彩统一</el-button>
+            <el-button size="small" text disabled title="开发中：可先用 AI 色彩的「参考图追色」逐张统一">多图色彩统一</el-button>
+            <span class="pm-wip-tag">开发中</span>
           </div>
           <!-- F5 局部调色蒙版选择器 -->
           <div class="pm-maskbar">
@@ -483,7 +479,13 @@ function resetAll() {
                         <span v-for="pr in profiles" :key="pr.id" class="px-chip"
                               :class="{ on: curProfile === pr.id }" @click="pickProfile(pr.id)">{{ pr.label }}</span>
                       </div>
-                      <div class="pm-param wip"><div class="pm-param-row"><span class="pm-param-label">强度</span><span class="pm-wip-tag">开发中</span></div><el-slider :model-value="0" disabled /></div>
+                      <div class="pm-param" :class="{ wip: curProfile === 'standard' }">
+                        <div class="pm-param-row"><span class="pm-param-label">强度</span>
+                          <span class="pm-param-val">{{ val('color.profile_strength', 100) }}</span></div>
+                        <el-slider :model-value="val('color.profile_strength', 100)" :min="0" :max="100"
+                                   :disabled="curProfile === 'standard'"
+                                   @update:model-value="v => setVal('color.profile_strength', v)" />
+                      </div>
                     </div>
                   </div>
                 </template>
@@ -778,19 +780,27 @@ function resetAll() {
             <div class="pm-card-title">画质</div>
             <div class="pm-param-row" v-for="p in imageParams" :key="p.key">
               <span class="pm-param-name" :title="p.label">{{ p.label }}</span>
-              <el-slider v-model="params[p.key]" size="small" :min="p.min" :max="p.max"
-                :disabled="false" style="flex:1; margin: 0 10px;"
-                @input="onParam(p)" />
-              <span class="pm-param-val">{{ params[p.key] }}</span>
+              <el-slider :model-value="val(p.key, 0)" size="small" :min="p.min" :max="p.max"
+                style="flex:1; margin: 0 10px;"
+                @update:model-value="v => setVal(p.key, v)" />
+              <span class="pm-param-val">{{ val(p.key, 0) }}</span>
             </div>
           </div>
           <div class="pm-card">
             <div class="pm-card-title">背景</div>
             <div class="pm-param-row" v-for="p in bgParams" :key="p.key">
               <span class="pm-param-name" :title="p.label">{{ p.label }}</span>
-              <el-slider v-model="params[p.key]" size="small" :min="p.min" :max="p.max"
-                style="flex:1; margin: 0 10px;" @input="onParam(p)" />
-              <span class="pm-param-val">{{ params[p.key] }}</span>
+              <el-slider :model-value="val(p.key, 0)" size="small" :min="p.min" :max="p.max"
+                style="flex:1; margin: 0 10px;" @update:model-value="v => setVal(p.key, v)" />
+              <span class="pm-param-val">{{ val(p.key, 0) }}</span>
+            </div>
+            <div class="pm-param-row">
+              <span class="pm-param-name">天空样式</span>
+              <div style="flex:1; margin: 0 10px; display:flex; gap:6px; flex-wrap:wrap">
+                <span v-for="m in skyModes" :key="m.id" class="px-chip"
+                      :class="{ on: val('sky_replace.mode', 'sunset') === m.id }"
+                      @click="setVal('sky_replace.mode', m.id)">{{ m.label }}</span>
+              </div>
             </div>
           </div>
         </div>
@@ -877,6 +887,7 @@ function resetAll() {
 .pm-wip-tag { font-size: 9px; color: #c79a76; border: 1px solid #5a4436; border-radius: 3px; padding: 0 5px; flex: none;
   background: rgba(176,131,106,.08); }
 .pm-methods { display: flex; flex-wrap: wrap; gap: 5px; margin-bottom: 8px; }
+.px-chip.wip { opacity: .45; cursor: not-allowed; }
 .pm-toggles { display: flex; flex-direction: column; gap: 8px; padding: 4px 0; }
 .pm-toggle { display: flex; align-items: center; gap: 8px; }
 .pm-toggle .pm-param-label { flex: 1; }
