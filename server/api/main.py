@@ -407,7 +407,64 @@ def build_preset(base_name, overrides, routing=None, person=None):
             preset.setdefault("nodes", []).append({"op": op, "params": by_op.pop(op)})
     for op in list(by_op.keys()):
         preset.setdefault("nodes", []).append({"op": op, "params": by_op.pop(op)})
+    _merge_eye_brighten(preset)
+    preset["nodes"] = sorted(preset.get("nodes", []), key=_stage_of)   # sorted() 稳定: 同阶段保持原顺序
     return preset
+
+
+# 节点执行阶段。基础预设里没有的操作 (祛斑/黑眼圈/塑形/妆容…) 旧代码一律追加到末尾, 于是在
+# 追色、颗粒、LUT 之后才执行: 祛斑把颗粒当瑕疵整片抹平、塑形拉扯已加的颗粒。这里按
+# 修复 → 局部修饰 → 肤色/妆容 → 形变 → 背景 → 全局调色 → 颗粒 排序。
+_STAGES = (
+    ({"raw_develop", "face_detect", "quality_enhance", "face_enhance", "face_parsing"}, 0),
+    ({"blemish", "blemish_mole", "blemish_body", "oil_control", "dark_circle", "eye_bag",
+      "eye_white", "red_vein", "lip_polish", "wrinkle", "double_chin", "flyaway", "white_hair",
+      "lid_patch_l", "lid_patch_r", "antiglare", "striae", "axilla", "gum_fix_l", "gum_fix_r",
+      "teeth_fix"}, 1),
+    ({"skin_retouch", "hair_smooth", "hair_gap", "hair_unify", "hair_recolor"}, 2),
+    ({"skin_tone", "teeth_whiten", "eye_brighten", "eye_brighten_l", "eye_brighten_r",
+      "catchlight", "makeup_highlight", "makeup_shadow", "brow_enh_l", "brow_enh_r",
+      "eye_makeup_l", "eye_makeup_r", "lip_makeup", "makeup_transfer", "makeup_suit"}, 3),
+    ({"liquify_auto", "facesurgery", "smile", "smile_manage", "teeth_align", "crown",
+      "hair_volume_l", "hair_volume_r", "body_waist", "body_leg_thin", "body_leg_long",
+      "body_liquify"}, 4),
+    ({"bg_clean", "blur_background", "bg_color", "sky_replace", "sky_enhance"}, 5),
+    ({"ai_calibrate", "profile", "white_balance", "tone", "hsl", "curves", "levels",
+      "color_grading", "selective_color", "color_editor", "color_match", "lut"}, 6),
+    ({"grain"}, 7),
+)
+
+
+def _stage_of(node):
+    op = node.get("op", "")
+    if node.get("mask"):   # F5 局部调色
+        return 6
+    if op.startswith("wrinkle_"):
+        return 1
+    for ops, stage in _STAGES:
+        if op in ops:
+            return stage
+    return 3   # 未知操作: 放在形变之前, 避免在全局调色/颗粒之后执行
+
+
+def _merge_eye_brighten(preset):
+    """eye_brighten (双眼) 与 eye_brighten_l / eye_brighten_r (单眼) 曾各自作为节点执行,
+    同一只眼被提亮 2 次。合并为左右各一个节点: 单眼参数优先, 否则沿用双眼参数。"""
+    nodes = preset.get("nodes", [])
+    eyes = [n for n in nodes if n.get("op") in ("eye_brighten", "eye_brighten_l", "eye_brighten_r")
+            and not n.get("mask")]
+    if len({n["op"] for n in eyes}) < 2 and len(eyes) < 2:
+        return
+    deg = {n["op"]: (n.get("params") or {}).get("degree") for n in eyes}
+    both = deg.get("eye_brighten")
+    both = 0.4 if both is None else both
+    first = nodes.index(eyes[0])
+    rest = [n for n in nodes if n not in eyes]
+    merged = []
+    for s in ("l", "r"):
+        v = deg.get("eye_brighten_" + s)
+        merged.append({"op": "eye_brighten_" + s, "params": {"degree": both if v is None else v}})
+    preset["nodes"] = rest[:first] + merged + rest[first:]
 
 
 # ---- 资源上限 (Issue #2), 均可用环境变量调整 ----

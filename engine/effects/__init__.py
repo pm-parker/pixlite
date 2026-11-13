@@ -96,9 +96,22 @@ def skin_tone_hsl(bgr, parsing, hsl, preset='nuanhuaipi'):
     mm = (mask_of(parsing, 'skin', dilate=2).astype(np.float32) / 255)[..., None]
     return (bgr * (1 - mm) + out * mm).astype(np.uint8)
 
-def grain(bgr, density=0.12, luminance=0.29):
-    """Aligned: RealGrain (NoiseBlend.frag semantics): luminance-correlated noise."""
-    noise = np.random.default_rng(7).normal(0, 255 * density * 0.5, bgr.shape[:2])
+def grain(bgr, density=0.03, luminance=0.29, size=30):
+    """Aligned: RealGrain (NoiseBlend.frag semantics): luminance-correlated noise.
+    density: noise std = 255·density·0.5 (0.03 ≈ 3.8/255);
+    size: UI 0..100 颗粒大小 → 颗粒直径 max(1, size/20) 像素 (30 ≈ 1.5 px)。
+    BUGFIX: 旧实现忽略 size, 永远是逐像素白噪声; 默认密度偏高, 人像整张发脏。"""
+    h, w = bgr.shape[:2]
+    rng = np.random.default_rng(7)
+    cell = max(1.0, float(size) / 20.0)
+    if cell > 1.0:
+        sh, sw = max(1, round(h / cell)), max(1, round(w / cell))
+        noise = cv2.resize(rng.standard_normal((sh, sw)).astype(np.float32), (w, h),
+                           interpolation=cv2.INTER_CUBIC)
+        noise /= max(float(noise.std()), 1e-6)   # 放大会降低方差, 归一化保持强度不随 size 变化
+    else:
+        noise = rng.standard_normal((h, w)).astype(np.float32)
+    noise *= 255 * float(density) * 0.5
     gray = cv2.cvtColor(bgr, cv2.COLOR_BGR2GRAY).astype(np.float32) / 255
     corr = 1 - np.abs(gray - luminance)
     noise *= corr

@@ -25,22 +25,49 @@ def _skin_mask(ctx, bgr):
         # ImportError 被下方 except 吞掉 → 永远返回 None → skin_tone 美白/提亮作用到
         # 整张图 (背景/衣服一起变色), 肤色统一 (unify) 永远不执行。
         from ..perception import mask_of
-        m = mask_of(_parsing(ctx, bgr), 'skin', dilate=2)
-        if m.shape[:2] != bgr.shape[:2]:
-            m = cv2.resize(m, (bgr.shape[1], bgr.shape[0]), interpolation=cv2.INTER_NEAREST)
-        return m
+        # 皮肤 + 鼻子 (解析模型把鼻子单独分类, 旧遮罩只取 skin → 提亮后鼻子留成一块暗斑)
+        m = mask_of(_parsing(ctx, bgr), 'skin', 'nose', dilate=2).astype(np.float32)
+        if m.shape[:2] != bgr.shape[:2]:   # 旧: 最近邻放大 → 锯齿硬边
+            m = cv2.resize(m, (bgr.shape[1], bgr.shape[0]), interpolation=cv2.INTER_LINEAR)
+        # 向内羽化: min(原遮罩, 模糊遮罩) 只软化内边缘, 不向背景/头发外扩 (Issue #6)
+        sigma = max(2.0, 0.004 * max(bgr.shape[:2]))
+        m = np.minimum(m, cv2.GaussianBlur(m, (0, 0), sigma))
+        return np.clip(m, 0, 255).astype(np.uint8)
     except Exception as e:
         # 不再静默: 记录原因, 调用方按 fail-closed 跳过局部效果 (Issue #6)
         with contextlib.suppress(Exception):
             ctx.setdefault('warnings', []).append(f'skin mask unavailable: {type(e).__name__}: {e}'[:200])
         return None
 
+def _refine_parsing(par, faces):
+    """用 478 点关键点补眼睛标签。SegFormer 对眯眼/小脸经常整只眼睛判成 skin, 之后祛斑、
+    肤色提亮/统一都把眼睛当皮肤处理 → 眼睛被抹平、发灰。只在 skin/nose 像素上补, 不改其它类。"""
+    from ..perception import CLS
+    pts_ok = [f for f in (faces or []) if isinstance(f, dict) and f.get('mesh') is not None]
+    if not pts_ok:
+        return par
+    par = par.copy()   # parse 结果有缓存, 不能原地改
+    skinlike = np.isin(par, (CLS['skin'], CLS['nose']))
+    for f in pts_ok:
+        pts = np.asarray(f['mesh'], np.float32)
+        for idx, cls in ((LM.EYE_L_IDX, 'eye_l'), (LM.EYE_R_IDX, 'eye_r')):
+            if len(pts) <= max(idx):
+                continue
+            m = np.zeros(par.shape[:2], np.uint8)
+            cv2.fillPoly(m, [cv2.convexHull(pts[idx].astype(np.int32))], 255)
+            inside = m > 0
+            if not inside.any() or (par[inside] == CLS[cls]).mean() > 0.5:
+                continue   # 关键点无效, 或解析已识别出这只眼睛
+            par[(m > 0) & skinlike] = CLS[cls]
+    return par
+
+
 def _parsing(ctx, bgr):
     """Lazy face-parsing: 预设缺 face_parsing 节点、或通过 overrides 追加了依赖
     parsing 的新节点时, 原代码直接 ctx['parsing'] KeyError 导致整单失败。"""
     par = ctx.get('parsing')
     if par is None or par.shape[:2] != bgr.shape[:2]:
-        par = ctx['parsing'] = P.get_skin_parser()(bgr)
+        par = ctx['parsing'] = _refine_parsing(P.get_skin_parser()(bgr), dict.get(ctx, 'faces'))
     return par
 
 
@@ -167,7 +194,7 @@ class Pipeline:
                 bgr = enhance_face(bgr, degree=float(pr.get('degree', 0.7)))
             elif op == 'face_parsing':
                 parser = P.get_skin_parser()
-                ctx['parsing'] = parser(bgr)
+                ctx['parsing'] = _refine_parsing(parser(bgr), ctx.get('faces'))
             elif op == 'blemish':
                 bgr = E.blemish.blemish_remove(bgr, ctx['parsing'], ctx.get('faces'),
                                                degree=pr.get('degree', .5),
@@ -287,10 +314,16 @@ class Pipeline:
             elif op == 'skin_tone':
                 # cloud preset semantic params (pf 90004 透亮/90005 美白/90007 红润/
                 # 90085-86 肤色统一) — aggregated, skin-masked
-                bright = float(pr.get('brighten') or pr.get('degree') or 0)
-                whiten = float(pr.get('whiten') or 0)
-                rouge  = float(pr.get('rouge') or 0)
-                unify  = max(float(pr.get('unify_face') or 0), float(pr.get('unify_body') or 0))
+                # 所有强度为 0..1 (旧代码不限幅: 预设写 brighten=10 时 L×1.6, 脸部成块过曝)
+                def _u(*keys, pr=pr):
+                    for k_ in keys:
+                        if pr.get(k_):
+                            return float(np.clip(float(pr[k_]), 0, 1))
+                    return 0.0
+                bright = _u('brighten', 'degree')
+                whiten = _u('whiten')
+                rouge  = _u('rouge', 'rosy')   # 预设库曾用 rosy, 引擎只读 rouge → 红润从未生效
+                unify  = max(_u('unify_face'), _u('unify_body'))
                 if bright or whiten or rouge or unify:
                     # BUGFIX: OpenCV 8-bit LAB 的 a/b 通道是 0..255 (128=中性), 旧代码按
                     # 有符号 -128..127 处理: 末尾 clip 把 a/b>127 (所有偏暖/偏红像素,
@@ -300,10 +333,12 @@ class Pipeline:
                     lab[..., 1:] -= 128.0
                     skin = _skin_mask(ctx, bgr)
                     L = lab[..., 0]
-                    if bright:
-                        L = L * (1 + 0.06 * bright)
-                    if whiten:  # 美白: 降 a/b 黄红 + 提亮
-                        L = L * (1 + 0.04 * whiten)
+                    # 提亮用肩部曲线 L + k·L·(255-L)/255: 中间调抬升最多, 高光/暗部趋于 0,
+                    # 不会把高光推出 255 (旧: L×(1+0.06·b) 线性放大)。b=1 时中间调约 +15。
+                    lift = 0.24 * bright + 0.16 * whiten
+                    if lift:
+                        L = L + lift * L * (255.0 - L) / 255.0
+                    if whiten:  # 美白: 降 a/b 黄红
                         lab[..., 1] *= (1 - 0.15 * whiten)
                         lab[..., 2] *= (1 - 0.10 * whiten)
                     if rouge:   # 红润: a+
@@ -334,9 +369,11 @@ class Pipeline:
             elif op == 'eye_brighten':
                 bgr = E.eye_brighten(bgr, ctx['parsing'], pr.get('degree', .4))
             elif op == 'grain':
-                bgr = E.grain(bgr, pr.get('density', .1), pr.get('luminance', .29))
+                bgr = E.grain(bgr, pr.get('density', .03), pr.get('luminance', .29),
+                              pr.get('size', 30))
             elif op == 'liquify_auto':
-                bgr = self._auto_liquify(bgr, ctx.get('faces') or [], pr.get('profile', 'light'))
+                bgr = self._auto_liquify(bgr, ctx.get('faces') or [], pr.get('profile', 'light'),
+                                         pr.get('degree'))
             elif op == 'facesurgery':
                 bgr = FS.apply_head_narrow(bgr, ctx.get('faces', []),
                                            degree=pr.get('degree', 50),
@@ -351,11 +388,13 @@ class Pipeline:
                 if dict.get(ctx, 'parsing') is not None:
                     from ..perception import mask_of
                     mask = mask_of(ctx['parsing'], 'skin')
+                # 追色只在有参考图时生效 (与前端 lib.js 约定一致)。旧代码无参考图时回退
+                # auto_exposure, 而基础预设 wedding_basic 的 color_match.ref_sample 恒为
+                # null → 所有预设都被整图线性提亮/压暗 (L×0.7~1.4), 暗图高光溢出、亮图发灰。
+                # 需要自动曝光请显式使用 ai_calibrate.exposure。
                 if ref_img is not None:
                     bgr = C.color_match(bgr, ref_img, protect_skin_mask=mask,
                                         strength=pr.get('strength', 1.0))
-                else:
-                    bgr = C.auto_exposure(bgr)
             elif op == 'lut':
                 lut_path = pr.get('path')
                 if lut_path and os.path.exists(lut_path):
@@ -421,20 +460,24 @@ class Pipeline:
                 progress_cb((i + 1) / total)
         return bgr
 
-    def _auto_liquify(self, bgr, faces, profile):
+    def _auto_liquify(self, bgr, faces, profile, degree=None):
         """Aligned: AIReshape/AutoLiquify — face-box driven subtle slimming (YuNet 5pt).
-        Full landmark-driven version pending 478-pt model on py3.14."""
+        BUGFIX: 旧代码在太阳穴做径向推挤 (direction=None), 内容向外鼓出, 发际线处出现一圈圆环;
+        半径/强度按整图尺寸取 (半径 = 短边 10%), 小脸照片上整个侧脸都被推变形。
+        现在按脸宽取半径, 水平向脸中线收 (瘦太阳穴/颧骨)。"""
         out = bgr
         k = {'light': 0.015, 'medium': 0.03, 'strong': 0.05}.get(profile, 0.02)
+        if degree is not None:
+            k = 0.04 * float(np.clip(float(degree), 0, 1))
+        if k <= 0:
+            return bgr
         for f in faces:
             if 'box' not in f:
                 continue
             x, y, fw, fh = f['box']
-            # temples at upper corners of face box
-            for cx in (x + fw * 0.08, x + fw * 0.92):
-                out = W.liquify_push(out, (float(cx), float(y + fh * 0.35)),
-                                     radius=min(bgr.shape[:2]) * 0.10,
-                                     strength=min(bgr.shape[:2]) * k, direction=None)
+            for cx, sgn in ((x + fw * 0.12, 1.0), (x + fw * 0.88, -1.0)):
+                out = W.liquify_push(out, (float(cx), float(y + fh * 0.42)),
+                                     radius=fw * 0.28, strength=fw * k, direction=(sgn, 0.0))
         return out
 
     def _apply_factors(self, op, params, factors, pop):

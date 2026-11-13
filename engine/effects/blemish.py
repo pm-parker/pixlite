@@ -33,12 +33,21 @@ def blemish_remove(bgr, parsing, faces=None, degree=0.5, mode='spot', region='fa
     if m.max() == 0:
         return bgr
     k = 9 if mode == 'mole' else 15
-    thr = 7 if mode == 'mole' else 4
     gray = cv2.cvtColor(bgr, cv2.COLOR_BGR2GRAY).astype(np.float32)
     base = cv2.GaussianBlur(gray, (0, 0), 2.0)
     detail = gray - base
+    # 远离遮罩边缘 (中值窗口的一半), 否则中值把头发/眉毛/背景颜色拖进皮肤
+    m = cv2.erode(m, np.ones((k // 2 + 1, k // 2 + 1), np.uint8))
     sel = (m > 128)
-    spot = (detail < -thr) & sel if mode == 'mole' else (np.abs(detail) > thr) & sel
+    if not sel.any():
+        return bgr
+    # 自适应阈值: 旧代码固定 |detail|>4 (接近噪声/颗粒水平), 正常皮肤纹理几乎全被当成瑕疵抹掉,
+    # 祛斑=整脸磨平。改为皮肤区域细节的鲁棒标准差的倍数, 只挑出明显偏离的斑点。
+    # 斑点是成片的, 噪声/颗粒是单像素的: 先对细节层做轻微平滑再判定, 单像素噪声不会被当成瑕疵
+    blob = cv2.GaussianBlur(detail, (0, 0), 1.0)
+    mad = float(np.median(np.abs(blob[sel]))) * 1.4826
+    thr = max(7.0 if mode == 'mole' else 4.0, 3.0 * mad)
+    spot = (blob < -thr) & sel if mode == 'mole' else (np.abs(blob) > thr) & sel
     spot = (spot.astype(np.uint8) * 255)
     spot = cv2.morphologyEx(spot, cv2.MORPH_CLOSE, np.ones((3, 3), np.uint8))
     spot = cv2.dilate(spot, np.ones((3, 3), np.uint8), iterations=1 if mode == 'mole' else 2)

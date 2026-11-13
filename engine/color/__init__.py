@@ -105,8 +105,9 @@ def tone_adjust(bgr, params):
     sat = params.get('saturation', 0) / 100.0
     bri = params.get('brightness', 0) / 100.0
     dhz = params.get('dehaze', 0) / 100.0
-    if exp:
-        f = f * (2.0 ** exp)
+    if exp:   # 曝光按线性光计算 (旧: 直接乘 sRGB 编码值, 同样 EV 下明暗变化约为真实的 2 倍)
+        lin = np.power(np.clip(f, 0, 1), 2.2) * (2.0 ** exp)
+        f = np.power(np.clip(lin, 0, 1), 1 / 2.2)
     if bri:   # 亮度: 中间调 gamma (黑白点不动). 前端有此滑杆, 旧引擎未实现 → 拖动无效
         f = np.power(np.clip(f, 0, 1), 1.0 / (1.0 + 0.6 * bri) if bri > 0 else 1.0 - 0.6 * bri)
     if dhz:   # 祛雾: 暗通道估计雾浓度, 去除灰雾并补对比 (前端有此滑杆, 旧引擎未实现)

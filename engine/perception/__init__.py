@@ -124,8 +124,13 @@ class SkinParser:
         x = (x - [0.485, 0.456, 0.406]) / [0.229, 0.224, 0.225]
         x = x.transpose(2, 0, 1)[None].astype(np.float32)
         logits = np.asarray(self.sess.run(None, {self.inp: x})[0])[0]
-        seg = logits.argmax(0).astype(np.uint8)
-        return cv2.resize(seg, (bgr.shape[1], bgr.shape[0]), interpolation=cv2.INTER_NEAREST)
+        # 模型输出只有 128x128。旧代码先 argmax 再最近邻放大到原图, 每个标签像素在 1024 图上是
+        # 8x8 的方块 → 皮肤/眼睛/眉毛遮罩呈阶梯状, 祛斑/肤色/磨皮的边缘出现锯齿和色块。
+        # 改为先把 logits 双线性放大再 argmax, 边界按原图分辨率平滑。
+        h, w = bgr.shape[:2]
+        up = np.stack([cv2.resize(c.astype(np.float32), (w, h), interpolation=cv2.INTER_LINEAR)
+                       for c in logits])
+        return up.argmax(0).astype(np.uint8)
 
     def __call__(self, bgr):
         return cached_parse(self, bgr)

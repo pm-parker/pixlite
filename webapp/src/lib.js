@@ -214,7 +214,8 @@ export const BEAUTY_TABS = [
   {
     id: 'bt2', name: '皮肤调整', sections: [
       { name: '磨皮质感', method: [
-        { id: 'neutral_flat', label: '中性灰平整', param: S('skin_retouch.strength', '程度', 0, -100, 100, { engine: 'skin_retouch.strength', scale: 0.01, base: 0.6 }) },
+        // base 与基础预设 wedding_basic 的 skin_retouch.strength (0.45) 一致: 滑杆 0 = 不改基础预设
+        { id: 'neutral_flat', label: '中性灰平整', param: S('skin_retouch.strength', '程度', 0, -100, 100, { engine: 'skin_retouch.strength', scale: 0.01, base: 0.45 }) },
         { id: 'neutral_3d', label: '中性灰立体', param: S('__wip_ms_n3d', '程度', 0) },
         { id: 'texture', label: '质感磨皮', param: S('__wip_ms_tex', '程度', 0) },
         { id: 'hf_face', label: '高低频磨皮脸', param: S('__wip_ms_hff', '程度', 0) },
@@ -309,7 +310,9 @@ export const BEAUTY_TABS = [
     id: 'bt7', name: '妆容调整', sections: [
       { name: 'AI 妆容迁移', params: [
         S('makeup_transfer.degree', '妆强度', 0, 0, 100, { engine: 'makeup_transfer.degree', scale: 0.01 }),
-        S('makeup_transfer.level', '妆感档位(1淡/2舞台/3浓)', 2, 1, 3, 1, { engine: 'makeup_transfer.level' }),
+        // BUGFIX: 旧写法 S(..., 2, 1, 3, 1, {engine}) 多了一个参数, {engine} 被丢弃 → 本项被当成
+        // 未知键原样透传, 默认值 level=2 让每个预设都追加一次 0.7 强度的「舞台妆」(蓝眼影/红唇)
+        S('makeup_transfer.level', '妆感档位(1淡/2舞台/3浓)', 2, 1, 3, { engine: 'makeup_transfer.level' }),
       ]},
       { name: '原厂整套妆', select: 'makeup_suit.suit_id', params: [
         S('makeup_suit.degree', '套妆强度', 0, 0, 100, { engine: 'makeup_suit.degree', scale: 0.01 }),
@@ -469,7 +472,7 @@ export function defaultOverrides() {
   for (let i = 0; i < 8; i++) {
     o[`hsl.${i}.h`] = 0; o[`hsl.${i}.s`] = 0; o[`hsl.${i}.l`] = 0
   }
-  o['grain.density'] = 0   // UI 0-100，引擎基线 0.04
+  o['grain.density'] = 0   // UI 0-100，0 = 基础预设 0.02
   o['grain.size'] = 30
   // F6 色阶/曲线/颜色分级/可选颜色/色彩编辑器
   o['levels.in_black'] = 0; o['levels.in_white'] = 255; o['levels.gamma'] = 1
@@ -510,8 +513,9 @@ export function toEngineOverrides(values) {
     if (IMAGE_PARAMS.some(p => p.key === k)) continue   // 循环结束后统一合并 (见下)
     if (k === 'sky_replace.mode') continue   // 随 sky_replace.degree 一起下发 (见下)
     if (k === 'grain.density') {
-      // UI 0..100 → 引擎密度 0..0.3 (0=引擎默认0.04); 高于100透传引擎原始值
-      if (v) out[k] = v <= 100 ? Math.round((v / 100 * 0.3) * 1000) / 1000 : v
+      // UI 0..100 → 引擎密度 0..0.15 (0 = 用基础预设的 0.02)。旧映射 0..0.3: 胶片预设的
+      // 30 → 0.09, 噪声标准差 ~11/255, 人像整张发脏。高于 100 透传引擎原始值
+      if (v) out[k] = v <= 100 ? Math.round((v / 100 * 0.15) * 1000) / 1000 : v
       continue
     }
     const m = scale[k]
@@ -521,9 +525,14 @@ export function toEngineOverrides(values) {
         skinHsl[m.idx] = (v || 0) * m.scale
         continue
       }
+      // 滑杆停在默认值 (未调整) 时不下发, 由基础预设 (wedding_basic / gfp_deep_test) 自身的
+      // 节点参数生效。旧代码把默认值也换算下发: 「深度磨皮」默认 0 把 face_enhance 0.38
+      // (深度修复里是 0.8) 覆盖成 0; 带 base 的滑杆则用 base 覆盖了基础预设的取值。
+      if (v === undefined || v === null || v === m.def) continue
       const base = m.base !== undefined ? m.base : 0
-      let ev = base + (v || 0) * (m.scale || 1)
-      if (m.base !== undefined && m.min !== undefined && m.max !== undefined) ev = Math.min(Math.max(m.min, ev), m.max)
+      let ev = base + v * (m.scale || 1)
+      // 限制在引擎取值范围 (旧代码按 UI 的 ±100 限幅等于没限: 磨皮 -100 → 强度 -0.4)
+      if (m.base !== undefined) ev = Math.min(Math.max(0, ev), base >= 1 ? 100 : 1)
       out[m.engine] = m.engine === 'makeup_suit.suit_id' ? ev : (Math.round(ev * 1000) / 1000)
     } else if (k.startsWith('rt.')) {
       // routing passthrough: value already in engine scale (0..1), keep as-is
@@ -553,6 +562,8 @@ export function toEngineOverrides(values) {
       continue
     } else if (k === 'color_match.strength' || k === 'color_match.tone' || k === 'color_match.color') {
       continue // handled below with ref
+    } else if (k.startsWith('color.')) {
+      continue // 配置文件: 下方转成 profile.* (旧代码另把 color.* 透传成一个无效的 color 节点)
     } else if (!k.startsWith('__')) {
       if (v !== undefined && v !== null && v !== 0) out[k] = v
     }
@@ -564,6 +575,8 @@ export function toEngineOverrides(values) {
       ...Array(8).fill(hd), ...Array(8).fill(sd), ...Array(8).fill(ld),
     ]
   }
+  // 妆感档位只修饰妆容迁移; 未开妆强度时不下发, 否则引擎按默认强度 0.7 上妆
+  if (!out['makeup_transfer.degree']) delete out['makeup_transfer.level']
   // AI 追色：有参考图才发
   const st = values['color_match.strength'] || 0
   const refPath = values['color_match.ref_path']
@@ -585,8 +598,7 @@ export function toEngineOverrides(values) {
   }
   if (values['ai_calibrate.white_balance']) out['ai_calibrate.white_balance'] = true
   if (values['ai_calibrate.exposure']) out['ai_calibrate.exposure'] = true
-  if (values['grain.size'] && values['grain.size'] !== 30) {
-    // size 无独立引擎参数，微调 density（近似）
-  }
+  // 颗粒大小: 引擎 grain.size 已生效 (默认 30 不下发, 由基础预设决定)
+  if (out['grain.size'] === 30) delete out['grain.size']
   return out
 }

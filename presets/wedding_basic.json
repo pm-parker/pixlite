@@ -93,7 +93,7 @@
   {
    "op": "grain",
    "params": {
-    "density": 0.04,
+    "density": 0.02,
     "luminance": 0.29
    }
   }

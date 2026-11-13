@@ -63,6 +63,10 @@ OPS = [
     ("striae", lambda: body.stretch_marks(img, par, faces, 1.0)),
 ]
 
+# test_face.jpg 是头像照 (下巴以下不到 1 个脸高): 身体类操作在头像照上必须不改图。
+# 旧实现按整图固定比例取区域, 在头像照上改到了脸/眼睛 (预设崩坏的原因之一)。
+# 正向效果见 tests/test_presets.py 的合成全身图测试。
+HEADSHOT_NOOP = {"body_waist", "body_leg_thin", "axilla"}
 diffs = {}
 fails = []
 for name, fn in OPS:
@@ -72,8 +76,10 @@ for name, fn in OPS:
         d = diff(img, out)
         diffs[name] = round(d, 4)
         cv2.imwrite(os.path.join(OUT, name + ".jpg"), out)
-        flag = "OK " if d > 0 else "ZERO-DIFF"
-        if d <= 0:
+        ok = d == 0 if name in HEADSHOT_NOOP else d > 0
+        flag = ("OK " if ok else ("ZERO-DIFF" if d <= 0 else "CHANGED-HEADSHOT")) + \
+               (" (headshot no-op)" if name in HEADSHOT_NOOP else "")
+        if not ok:
             fails.append(name)
         print(f"{flag} {name:18s} diff={d:.4f}  {time.time() - t0:.2f}s")
     except Exception as e:

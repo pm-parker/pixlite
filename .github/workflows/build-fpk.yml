@@ -61,7 +61,49 @@ jobs:
           pipx install ruff==0.17.4
           ruff check server/api/main.py fnpack/build_pkg.py tests/
       - name: Unit / API tests (model-dependent tests auto-skip)
-        run: python -m pytest -q
+        run: python -m pytest -q --ignore=tests/test_preset_quality.py
+
+  # 预设出图回归: 每个预设按前端真实参数链路出图, 检查亮度变化 / 高光溢出 / 结构相似度
+  # (tests/test_preset_quality.py)。需要 ~1.1GB 模型, 用 actions/cache 缓存, 只在首次或模型清单
+  # 变化时下载。单元测试不依赖模型, 放在 test job 里先跑。
+  preset-quality:
+    needs: test
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.12'
+          cache: pip
+          cache-dependency-path: |
+            requirements.txt
+            requirements-dev.txt
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '22'
+      - name: Install deps
+        run: |
+          sudo apt-get update && sudo apt-get install -y --no-install-recommends libgl1 libglib2.0-0
+          python -m pip install -r requirements-dev.txt
+      - name: Cache models
+        uses: actions/cache@v6
+        with:
+          path: engine/perception/models/*.onnx
+          key: models-${{ hashFiles('engine/perception/models_manifest.py') }}
+      - name: Download & verify models (sha256)
+        run: python tools/download_models.py
+      - name: Render every preset and check output metrics
+        env:
+          PIXLITE_QUALITY_REPORT: preset_quality.json
+        run: python -m pytest -q tests/test_preset_quality.py
+      - name: Upload metrics
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: preset-quality
+          path: preset_quality.json
+          if-no-files-found: ignore
 
   package:
     needs: test
@@ -172,7 +214,7 @@ jobs:
           if-no-files-found: error
 
   release:
-    needs: package
+    needs: [package, preset-quality]   # 预设出图回归不过不发版
     if: startsWith(github.ref, 'refs/tags/v')
     runs-on: ubuntu-24.04
     permissions:

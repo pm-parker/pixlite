@@ -51,6 +51,10 @@ OPS = {
     "striae": {"degree": 1.0},
 }
 
+# test_face.jpg 是头像照 (下巴以下不到 1 个脸高): 身体类操作在头像照上必须不改图。
+# 旧实现按整图固定比例取区域, 在头像照上改到了脸/眼睛 (预设崩坏的原因之一)。
+# 正向效果见 tests/test_presets.py 的合成全身图测试。
+HEADSHOT_NOOP = {"body_waist", "body_leg_thin", "axilla"}
 diffs = {}
 fails = []
 for op, params in OPS.items():
@@ -59,9 +63,11 @@ for op, params in OPS.items():
     out = pipe.run(img.copy())
     d = float(np.abs(out.astype(int) - baseline.astype(int)).mean())
     diffs[op] = round(d, 4)
-    if d <= 0:
+    ok = d == 0 if op in HEADSHOT_NOOP else d > 0
+    if not ok:
         fails.append(op)
-    print(f"{'OK ' if d > 0 else 'ZERO'} {op:18s} e2e_diff={d:.4f}")
+    tag = ("OK " if ok else "FAIL") + (" (headshot no-op)" if op in HEADSHOT_NOOP else "")
+    print(f"{tag} {op:18s} e2e_diff={d:.4f}")
 
 # full-on composite
 all_ov = {}

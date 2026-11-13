@@ -245,7 +245,8 @@ def test_skin_tone_leaves_non_skin_unchanged():
     p = EP.Pipeline.__new__(EP.Pipeline)
     p.preset = {"nodes": [{"op": "face_detect"}, {"op": "skin_tone", "params": {"brighten": 1.0}}]}
     out = p.run(img.copy())
-    skin = mask_of(get_skin_parser()(img), "skin", dilate=2)
+    # 皮肤遮罩包含鼻子 (否则提亮后鼻子留成暗斑)
+    skin = mask_of(get_skin_parser()(img), "skin", "nose", dilate=2)
     bg = skin == 0
     assert np.abs(out[bg].astype(int) - img[bg]).max() <= 1
     assert np.abs(out[skin > 128].astype(int) - img[skin > 128]).mean() > 1

@@ -2,7 +2,7 @@
 
 **本地运行的 AI 人像精修工作台，面向飞牛 fnOS NAS。** 浏览器打开即用，照片和模型都不出 NAS。
 
-> 当前为 **Beta** 版（`v0.1.12-beta.4`）。功能和界面对标像素蛋糕 10.0.5 的人像精修流程，仍有部分功能未实现（见[已知限制](#已知限制)）。欢迎在 [Issues](https://github.com/pm-parker/pixlite/issues) 反馈问题。
+> 当前为 **Beta** 版（`v0.1.12-beta.5`）。功能和界面对标像素蛋糕 10.0.5 的人像精修流程，仍有部分功能未实现（见[已知限制](#已知限制)）。欢迎在 [Issues](https://github.com/pm-parker/pixlite/issues) 反馈问题。
 
 ![工作台](docs/final_screens/workspace.png)
 
@@ -154,7 +154,8 @@ fnpack/            飞牛安装包：manifest、生命周期脚本、安装向�
 ## 开发与测试
 
 ```bash
-python -m pytest -q             # 73 条单元 / API / 网关 / 模型下载测试；缺模型的用例自动跳过
+python -m pytest -q             # 单元 / API / 网关 / 模型下载 / 预设测试；缺模型的用例自动跳过
+python -m pytest -q tests/test_preset_quality.py   # 预设出图回归：每个预设按界面参数出图，检查亮度、高光溢出、结构相似度（需要模型）
 python tests/run_e2e_c.py       # 端到端：28 个效果逐个开启，结果必须与基线不同（需要模型）
 python tests/run_out_c.py       # 单效果验证（需要模型）
 ```
@@ -174,7 +175,7 @@ python tests/run_out_c.py       # 单效果验证（需要模型）
 本地打包：
 
 ```bash
-python fnpack/build_pkg.py --fnpack /path/to/fnpack [--with-models] [--version 0.1.12-beta.4]
+python fnpack/build_pkg.py --fnpack /path/to/fnpack [--with-models] [--version 0.1.12-beta.5]
 ```
 
 产物输出在 `dist/`。脚本会先构建前端，再组装飞牛要求的目录结构（`app/` 和 `app/ui/config`），并校验入口配置、前端文件和 LUT 是否齐全。
@@ -188,11 +189,13 @@ python fnpack/build_pkg.py --fnpack /path/to/fnpack [--with-models] [--version 0
 - **多图色彩统一**：尚未实现（界面置灰），可先用 AI 色彩的参考图追色逐张统一。
 - **身体类效果**：用衣物 / 颈部分割区域近似身体轮廓，在头像特写上效果有限。
 - **CPU 性能**：在没有 GPU 的 NAS 上，含 GFPGAN 的预设单张需要数秒到数十秒。
+- **滤镜素材**：「日系」滤镜会把画面明显压暗、偏蓝（「胶片·日系」「清新户外」预设使用）；初雪、栀夏、陌上等 21 个滤镜的图片文件损坏，选中后精修会失败。
 
 ## 更新记录
 
 修复和改进的明细见 [BUGFIX_REPORT.md](BUGFIX_REPORT.md)。
 
+- **0.1.12-beta.5**：修复套用预设后照片崩坏：去掉每个预设都会执行的隐式自动曝光；预设参数尺度与滑杆统一，默认值不再覆盖基础预设；肤色提亮改为曲线，解析遮罩不再锯齿，补回被误判为皮肤的眼睛；修正偏紫预设和黑白滤镜；瘦腰改为收窄、身体类效果按人脸定位；修饰先于调色执行，颗粒减弱；新增预设出图回归检查。
 - **0.1.12-beta.4**：右侧「图像」板块（画质修复、背景虚化、天空增强 / 替换）可用；配置文件接入引擎；批量精修可套用工作台参数；批量和新建项目的预设下拉不再为空；修复头发柔顺报错；作用范围、多图色彩统一改标「开发中」。
 - **0.1.12-beta.3**：飞牛桌面入口改为 iframe、网关前缀改为 `/app/fnnas-pixlite`（beta.1 / beta.2 点击桌面图标会 404）。
 - **0.1.12**：从飞牛桌面图标打开即用（飞牛登录自动认证，不需要连接密钥）；精简包首次启动后台自动下载模型并显示进度；GitHub Actions 自动构建 `.fpk`。
