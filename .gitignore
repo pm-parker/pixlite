@@ -18,3 +18,15 @@ fnpack/build/
 dist/
 *.part
 fnpack/target/
+
+# --- repo slimming (chore/repo-slimming): build artifacts & runtime junk stay out of git ---
+fnpack/fnpack.exe
+*.log
+tests/qa/
+tests/out_b/
+tests/out_c/
+tests/out_f/
+tests/batch_out*/
+tests/batch_src*/
+tests/qa_batch_out*/
+tests/filters/

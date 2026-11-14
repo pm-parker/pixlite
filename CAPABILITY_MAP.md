@@ -4,7 +4,7 @@
 smile/hair_recolor 为 0–100 / ±100 直传，smile_manage/teeth_align 为 5 档（UI 0–100 → level 0–5）。
 所有 op 纯本地推理：OpenCV + SegFormer ONNX 解析 + YuNet 人脸 + MediaPipe
 face_landmarks ONNX 478 点（含 irises 468–477，onnxruntime 直接运行，无 mediapipe
-Python 包、无云端）。样张与 diff 数值见 `tests/out_c/`（diffs.json、e2e_diffs.json，
+Python 包、无云端）。样张与 diff 数值见 `pm-parker/pixlite-assets` 仓库 `tests-qa/tests/out_c/`（diffs.json、e2e_diffs.json，
 全链路全开 diff=10.081）。
 
 ## 478 点 landmark（P0 已解锁）
