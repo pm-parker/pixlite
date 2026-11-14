@@ -1,0 +1,87 @@
+# 工程质量门禁 (chore/engineering-baseline)
+#
+# 与 build-fpk.yml 互补:
+#   - build-fpk.yml: 单测 + 预设出图回归 + fpk 打包/发布 (push 到 main 不触发, **.md 不触发)
+#   - ci-quality.yml: ruff 全仓 + pyright 类型检查 + webapp 构建 + 版本一致性
+#     无论改的是不是 .md 都触发, 且不依赖人工自觉 —— 失败即 PR 变红。
+#
+# 判据基线 (详见 docs/engineering-baseline.md):
+#   - ruff: 全仓零告警 (存量已清零, 保持零)
+#   - pyright: 零 error (存量 8 个 Optional 访问错误已在本 PR 修复), pyright 版本钉死
+#   - 版本: fnpack/manifest 的 version 与 readme / RELEASE_NOTES 三处一致
+#   - webapp: 至少能 npm run build
+
+name: CI Quality
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: quality-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  lint:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.12'
+      - name: Ruff (全仓, 判据 ruff.toml)
+        run: |
+          pipx install ruff==0.17.4
+          ruff check .
+
+  typecheck:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.12'
+      - name: Install deps (类型需解析到真实依赖)
+        run: |
+          sudo apt-get update && sudo apt-get install -y --no-install-recommends libgl1 libglib2.0-0
+          python -m pip install -r requirements.txt -r requirements-dev.txt
+      - name: Pyright (零 error, 版本钉死)
+        run: |
+          python -m pip install pyright==1.1.414
+          pyright --pythonpath "$(python -c 'import sys; print(sys.executable)')" --outputjson > pyright.json
+          n=$(jq '.summary.errorCount' pyright.json)
+          echo "pyright errors: $n"
+          jq -r '.generalDiagnostics[] | select(.severity=="error") | "\(.file):\(.range.start.line+1) \(.rule) \(.message)"' pyright.json || true
+          if [ "$n" -ne 0 ]; then
+            echo "::error::类型检查未通过 ($n 个 error)。类型错误是发布阻断项, 修掉再推; 不要用 type: ignore 掩盖。"
+            exit 1
+          fi
+
+  version-consistency:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.12'
+      - name: manifest / readme / RELEASE_NOTES 版本一致
+        run: python tools/check_version.py
+
+  webapp-build:
+    # 前端只有 build-fpk 的 package job 会 npm build (且 full 变体平时不跑),
+    # 这里保证每个 PR 都验证 webapp 至少能构建
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: webapp/package-lock.json
+      - name: Build webapp
+        run: |
+          cd webapp && npm ci --no-audit --no-fund && npm run build

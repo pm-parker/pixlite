@@ -114,6 +114,7 @@ def test_profiles_change_image(name):
     from engine import color as C
 
     img = cv2.imread(os.path.join(ROOT, "tests", "test_face.jpg"))
+    assert img is not None, "tests/test_face.jpg missing"
     out = C.apply_profile(img, name, 1.0)
     assert np.abs(out.astype(int) - img).mean() > 3
     assert np.array_equal(C.apply_profile(img, name, 0.0), img)
@@ -129,6 +130,7 @@ def test_profile_standard_is_identity_and_reaches_pipeline():
     from engine import color as C
 
     img = cv2.imread(os.path.join(ROOT, "tests", "test_face.jpg"))
+    assert img is not None, "tests/test_face.jpg missing"
     assert np.array_equal(C.apply_profile(img, "standard", 1.0), img)
     p = build_preset("wedding_basic", {"profile.name": "bw", "profile.strength": 1.0})
     node = next(n for n in p["nodes"] if n["op"] == "profile")
