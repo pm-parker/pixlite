@@ -47,7 +47,7 @@ def main() -> int:
         problems.append(f"RELEASE_NOTES.md 首行未包含 {version} (当前首行: {first_line[:60]!r})")
 
     # changelog 规范: readme 的更新记录节里必须有当前版本条目
-    if not re.search(r"^- \*\*" + re.escape(version) + r"\*\*", readme, re.M):
+    if not re.search(r"^- \*\*" + re.escape(version) + r"\*\*", readme, re.MULTILINE):
         problems.append(f"readme.md 更新记录里缺少 {version} 条目")
 
     if problems:
