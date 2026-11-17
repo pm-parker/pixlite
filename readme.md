@@ -4,7 +4,7 @@
 
 > 当前为 **Beta** 版（`v0.1.12-beta.5`）。功能和界面对标像素蛋糕 10.0.5 的人像精修流程，仍有部分功能未实现（见[已知限制](#已知限制)）。欢迎在 [Issues](https://github.com/pm-parker/pixlite/issues) 反馈问题。
 
-![工作台](docs/final_screens/workspace.png)
+![工作台：左侧场景预设，中间为套用「自然磨皮」后的结果，右侧人像美化滑杆](docs/final_screens/workspace.png)
 
 ## 功能
 
@@ -20,6 +20,21 @@
 | 加速 | CPU 默认可用；自动探测 NVIDIA CUDA、AMD MIGraphX / ROCm、Intel OpenVINO（Windows 上为 DirectML），失败时回退 CPU |
 
 所有效果都在本地运行（OpenCV + onnxruntime），不调用任何云端服务。滑杆与引擎算法的对应关系见 [CAPABILITY_MAP.md](CAPABILITY_MAP.md)。
+
+![主页：9 类场景预设和项目列表](docs/final_screens/home.png)
+
+### 场景预设效果
+
+beta.5 修复了套用预设后照片崩坏的问题（明细见 [BUGFIX_REPORT.md](BUGFIX_REPORT.md#预设效果修复v0112-beta5)）。下图是同一张照片套用同一个预设，在 beta.4 和 beta.5 上的输出，照片均为仓库 `tests/` 目录里的测试图：
+
+- **自然磨皮**：beta.4 把整张脸提亮成一块，边缘有锯齿。
+- **婚纱一键**：beta.4 把偏亮的照片（白 T 恤）整体压暗发灰。
+- **质感肌**：beta.4 把偏暗的照片整体提亮，天空高光溢出。
+- **户外草坪**：beta.4 使用的滤镜是黑白滤镜，整张图褪色，脸部过曝。
+
+![同一张照片、同一个预设在 beta.4 与 beta.5 上的输出对比](docs/final_screens/preset_compare.jpg)
+
+预设效果由 `tests/test_preset_quality.py` 持续检查：每个预设按界面的真实参数出图，亮度变化、高光溢出、结构相似度超出阈值时 CI 失败（「日系」滤镜本身偏暗，用到它的两个预设暂不检查亮度，见[已知限制](#已知限制)）。这项检查只能发现明显崩坏，观感是否符合预期仍需人工判断。
 
 ## 在飞牛 fnOS 上安装
 
